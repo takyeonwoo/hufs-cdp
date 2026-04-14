@@ -1,4 +1,4 @@
-package com.scanpang.app.screens.detail
+package com.scanpang.app.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

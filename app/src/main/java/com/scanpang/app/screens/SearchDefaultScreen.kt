@@ -1,12 +1,16 @@
 package com.scanpang.app.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,67 +18,85 @@ import androidx.compose.material.icons.rounded.Coffee
 import androidx.compose.material.icons.rounded.CurrencyExchange
 import androidx.compose.material.icons.rounded.LocalHospital
 import androidx.compose.material.icons.rounded.LocalMall
-import androidx.compose.material.icons.rounded.LocalPharmacy
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Mosque
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Restaurant
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import com.scanpang.app.components.RecentSearchRow
-import com.scanpang.app.components.ScanPangBottomBar
 import com.scanpang.app.components.ScanPangCategoryTile
-import com.scanpang.app.components.ScanPangMainTab
-import com.scanpang.app.components.ScanPangSearchFieldPlaceholder
 import com.scanpang.app.components.ScanPangSuggestionRow
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
+import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
+/**
+ * 검색 기본 — 검색바는 키보드 없이 탭 시 결과 화면으로 이동.
+ */
 @Composable
-fun SearchScreen(
+fun SearchDefaultScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
-        bottomBar = {
-            ScanPangBottomBar(
-                selectedTab = ScanPangMainTab.Search,
-                onHomeClick = { navController.navigate(AppRoutes.Home) { launchSingleTop = true } },
-                onSearchClick = { },
-                onSavedClick = { navController.navigate(AppRoutes.Saved) { launchSingleTop = true } },
-                onProfileClick = { navController.navigate(AppRoutes.Profile) { launchSingleTop = true } },
-                onExploreClick = {
-                    navController.navigate(AppRoutes.ArDefault) { launchSingleTop = true }
-                },
-            )
-        },
-    ) { innerPadding ->
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(ScanPangColors.Surface)
                 .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(ScanPangDimens.screenHorizontal)
-                .padding(bottom = ScanPangSpacing.lg),
+                .padding(bottom = ScanPangDimens.mainTabContentBottomInset + ScanPangSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.xl),
         ) {
-            ScanPangSearchFieldPlaceholder(
-                placeholder = "장소, 식당, 카테고리 검색",
-                onClick = { navController.navigate(AppRoutes.SearchResults) },
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ScanPangDimens.searchBarHeightDefault)
+                    .clip(ScanPangShapes.radius14)
+                    .background(ScanPangColors.Background)
+                    .clickable { navController.navigate(AppRoutes.SearchResults) },
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = ScanPangSpacing.lg),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.rowGap10),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(ScanPangDimens.icon18),
+                        tint = ScanPangColors.OnSurfacePlaceholder,
+                    )
+                    Text(
+                        text = "장소, 식당, 카테고리 검색",
+                        style = ScanPangType.searchPlaceholderRegular,
+                        color = ScanPangColors.OnSurfacePlaceholder,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
             Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -128,14 +150,14 @@ fun SearchScreen(
                             label = "할랄 식당",
                             icon = Icons.Rounded.Restaurant,
                             iconTint = ScanPangColors.CategoryRestaurant,
-                            onClick = { },
+                            onClick = { navController.navigate(AppRoutes.NearbyHalal) },
                             modifier = Modifier.weight(1f),
                         )
                         ScanPangCategoryTile(
                             label = "기도실",
                             icon = Icons.Rounded.Mosque,
                             iconTint = ScanPangColors.Primary,
-                            onClick = { },
+                            onClick = { navController.navigate(AppRoutes.NearbyPrayer) },
                             modifier = Modifier.weight(1f),
                         )
                         ScanPangCategoryTile(
@@ -195,8 +217,14 @@ fun SearchScreen(
                     color = ScanPangColors.OnSurfaceStrong,
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
-                    ScanPangSuggestionRow(title = "주변 할랄 식당 보기", onClick = { })
-                    ScanPangSuggestionRow(title = "주변 기도실 보기", onClick = { })
+                    ScanPangSuggestionRow(
+                        title = "주변 할랄 식당 보기",
+                        onClick = { navController.navigate(AppRoutes.NearbyHalal) },
+                    )
+                    ScanPangSuggestionRow(
+                        title = "주변 기도실 보기",
+                        onClick = { navController.navigate(AppRoutes.NearbyPrayer) },
+                    )
                     ScanPangSuggestionRow(title = "명동 인기 쇼핑몰", onClick = { })
                     ScanPangSuggestionRow(title = "외국인 인기 관광지", onClick = { })
                 }

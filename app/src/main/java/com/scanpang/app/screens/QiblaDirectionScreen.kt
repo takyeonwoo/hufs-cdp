@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -24,10 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import com.scanpang.app.components.PrayerTimeCard
 import com.scanpang.app.components.QiblaCompass
-import com.scanpang.app.components.ScanPangBottomBar
 import com.scanpang.app.components.ScanPangHeaderWithBack
-import com.scanpang.app.components.ScanPangMainTab
-import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangSpacing
@@ -41,25 +39,14 @@ fun QiblaDirectionScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
-        bottomBar = {
-            ScanPangBottomBar(
-                selectedTab = ScanPangMainTab.Home,
-                onHomeClick = { navController.navigate(AppRoutes.Home) { launchSingleTop = true } },
-                onSearchClick = { navController.navigate(AppRoutes.Search) { launchSingleTop = true } },
-                onSavedClick = { navController.navigate(AppRoutes.Saved) { launchSingleTop = true } },
-                onProfileClick = { navController.navigate(AppRoutes.Profile) { launchSingleTop = true } },
-                onExploreClick = {
-                    navController.navigate(AppRoutes.ArDefault) { launchSingleTop = true }
-                },
-            )
-        },
-    ) { innerPadding ->
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(ScanPangColors.Surface)
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.xl),
         ) {

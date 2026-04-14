@@ -41,8 +41,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.scanpang.app.components.ScanPangBottomBar
-import com.scanpang.app.components.ScanPangMainTab
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.ScanPangFigmaAssets
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -59,29 +57,18 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
-        bottomBar = {
-            ScanPangBottomBar(
-                selectedTab = ScanPangMainTab.Home,
-                onHomeClick = { },
-                onSearchClick = { navController.navigate(AppRoutes.Search) { launchSingleTop = true } },
-                onSavedClick = { navController.navigate(AppRoutes.Saved) { launchSingleTop = true } },
-                onProfileClick = { navController.navigate(AppRoutes.Profile) { launchSingleTop = true } },
-                onExploreClick = {
-                    navController.navigate(AppRoutes.ArDefault) { launchSingleTop = true }
-                },
-            )
-        },
-    ) { innerPadding ->
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(ScanPangColors.Surface)
                 .statusBarsPadding()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = ScanPangDimens.mainTabContentBottomInset),
         ) {
             HomeTopSection(navController = navController)
-            HomeBottomScrollSection()
+            HomeBottomScrollSection(navController = navController)
         }
     }
 }
@@ -220,16 +207,19 @@ private fun HomeTopSection(navController: NavController) {
                 title = "할랄 식당",
                 icon = Icons.Rounded.Restaurant,
                 modifier = Modifier.weight(1f),
+                onClick = { navController.navigate(AppRoutes.NearbyHalal) },
             )
             QuickActionChip(
                 title = "기도실",
                 icon = Icons.Rounded.Mosque,
                 modifier = Modifier.weight(1f),
+                onClick = { navController.navigate(AppRoutes.NearbyPrayer) },
             )
             QuickActionChip(
                 title = "실시간 번역",
                 icon = Icons.Rounded.Translate,
                 modifier = Modifier.weight(1f),
+                onClick = { },
             )
         }
     }
@@ -240,12 +230,13 @@ private fun QuickActionChip(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit,
 ) {
     Column(
         modifier = modifier
             .clip(ScanPangShapes.radius14)
             .background(ScanPangColors.Background)
-            .clickable(enabled = false) { }
+            .clickable(onClick = onClick)
             .padding(horizontal = ScanPangDimens.homeQuickChipHorizontal, vertical = ScanPangSpacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
@@ -267,7 +258,7 @@ private fun QuickActionChip(
 }
 
 @Composable
-private fun HomeBottomScrollSection() {
+private fun HomeBottomScrollSection(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,7 +267,7 @@ private fun HomeBottomScrollSection() {
         verticalArrangement = Arrangement.spacedBy(ScanPangDimens.listBlockGap),
     ) {
         RecentSection()
-        RecommendSection()
+        RecommendSection(navController = navController)
     }
 }
 
@@ -372,7 +363,7 @@ private fun RecentRow(
 }
 
 @Composable
-private fun RecommendSection() {
+private fun RecommendSection(navController: NavController) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(ScanPangDimens.recommendSectionGap)) {
         Row(
@@ -402,6 +393,7 @@ private fun RecommendSection() {
                 subtitle = "할랄 인증 · 도보 5분",
                 context = context,
                 modifier = Modifier.weight(1f),
+                onClick = { navController.navigate(AppRoutes.RestaurantDetail) },
             )
             PlaceCard(
                 imageUrl = ScanPangFigmaAssets.HomePlaceCard2,
@@ -409,6 +401,7 @@ private fun RecommendSection() {
                 subtitle = "도보 15분 · 인기 명소",
                 context = context,
                 modifier = Modifier.weight(1f),
+                onClick = { },
             )
         }
     }
@@ -421,6 +414,7 @@ private fun PlaceCard(
     subtitle: String,
     context: android.content.Context,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -430,7 +424,8 @@ private fun PlaceCard(
                 ScanPangColors.OutlineSubtle,
                 ScanPangShapes.radius16,
             )
-            .background(ScanPangColors.Surface),
+            .background(ScanPangColors.Surface)
+            .clickable(onClick = onClick),
     ) {
         Box(
             modifier = Modifier

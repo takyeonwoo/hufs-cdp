@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
@@ -46,9 +49,12 @@ enum class ScanPangMainTab {
     Profile,
 }
 
+/**
+ * 하단 메인 탭: 컨테이너는 투명, 흰 pill + 중앙 FAB가 pill 위로 살짝 올라온 형태.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScanPangBottomBar(
+fun ScanPangTabBar(
     selectedTab: ScanPangMainTab,
     onHomeClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -60,14 +66,18 @@ fun ScanPangBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(ScanPangDimens.bottomBarContainerHeight)
-            .navigationBarsPadding(),
+            .height(
+                ScanPangDimens.bottomBarContainerHeight +
+                    ScanPangDimens.tabBarFabCenterOffsetUp,
+            )
+            .windowInsetsPadding(WindowInsets.navigationBars),
     ) {
         Row(
             modifier = Modifier
-                .align(Alignment.Center)
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(horizontal = ScanPangDimens.bottomPillHorizontalInset)
+                .padding(bottom = ScanPangSpacing.xs)
                 .height(ScanPangDimens.bottomPillHeight)
                 .border(
                     ScanPangDimens.borderHairline,
@@ -108,8 +118,9 @@ fun ScanPangBottomBar(
 
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .width(ScanPangDimens.fabSize),
+                .align(Alignment.BottomCenter)
+                .width(ScanPangDimens.fabSize)
+                .offset(y = -ScanPangDimens.tabBarFabCenterOffsetUp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
@@ -123,7 +134,7 @@ fun ScanPangBottomBar(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.CropFree,
-                        contentDescription = "탐색",
+                        contentDescription = "AR 탐색",
                         modifier = Modifier.size(ScanPangDimens.fabIcon),
                         tint = Color.White,
                     )

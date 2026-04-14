@@ -31,6 +31,8 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.CurrencyExchange
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -558,6 +560,106 @@ fun ArNavAgentPanelContent(
             }
         }
         ArNavGuideInputBar(placeholder = inputPlaceholder)
+    }
+}
+
+@Composable
+fun ArNavAiGuideTabWithTextField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    userMessage: String,
+    agentMessage: String,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = ScanPangDimens.arTopBarHorizontal)
+            .padding(bottom = ScanPangDimens.arChatAreaBottomPad),
+        verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arChatBubbleGap),
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Surface(
+                        shape = ScanPangShapes.arBubbleUser,
+                        color = ScanPangColors.Primary,
+                        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
+                    ) {
+                        Text(
+                            text = userMessage,
+                            modifier = Modifier.padding(
+                                horizontal = ScanPangDimens.arTopBarHorizontal,
+                                vertical = ScanPangDimens.icon10,
+                            ),
+                            style = ScanPangType.arNavTab13Inactive,
+                            color = Color.White,
+                            maxLines = 3,
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                ) {
+                    Surface(
+                        shape = ScanPangShapes.arBubbleAgent,
+                        color = ScanPangColors.ArOverlayWhite93,
+                        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
+                    ) {
+                        Text(
+                            text = agentMessage,
+                            modifier = Modifier.padding(
+                                horizontal = ScanPangDimens.arTopBarHorizontal,
+                                vertical = ScanPangDimens.icon10,
+                            ),
+                            style = ScanPangType.arNavTab13Inactive,
+                            color = ScanPangColors.OnSurfaceStrong,
+                            maxLines = 4,
+                        )
+                    }
+                }
+            }
+        }
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ScanPangDimens.arNavGuideInputHeight),
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    style = ScanPangType.arNavGuideInput13,
+                    color = ScanPangColors.OnSurfacePlaceholder,
+                )
+            },
+            textStyle = ScanPangType.arNavGuideInput13.copy(color = ScanPangColors.OnSurfaceStrong),
+            singleLine = true,
+            shape = ScanPangShapes.arInputPill,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = ScanPangColors.OnSurfaceStrong,
+                unfocusedTextColor = ScanPangColors.OnSurfaceStrong,
+                focusedBorderColor = ScanPangColors.Primary,
+                unfocusedBorderColor = ScanPangColors.OutlineSubtle,
+                focusedContainerColor = ScanPangColors.ArOverlayWhite85,
+                unfocusedContainerColor = ScanPangColors.ArOverlayWhite85,
+                cursorColor = ScanPangColors.Primary,
+            ),
+        )
     }
 }
 

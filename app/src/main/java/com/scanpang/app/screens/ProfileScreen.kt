@@ -36,8 +36,6 @@ import coil.request.ImageRequest
 import com.scanpang.app.components.ProfileSettingsCard
 import com.scanpang.app.components.ProfileSettingsRow
 import com.scanpang.app.components.ProfileSettingsSectionLabel
-import com.scanpang.app.components.ScanPangBottomBar
-import com.scanpang.app.components.ScanPangMainTab
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.ScanPangFigmaAssets
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -55,27 +53,15 @@ fun ProfileScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Background,
-        bottomBar = {
-            ScanPangBottomBar(
-                selectedTab = ScanPangMainTab.Profile,
-                onHomeClick = { navController.navigate(AppRoutes.Home) { launchSingleTop = true } },
-                onSearchClick = { navController.navigate(AppRoutes.Search) { launchSingleTop = true } },
-                onSavedClick = { navController.navigate(AppRoutes.Saved) { launchSingleTop = true } },
-                onProfileClick = { },
-                onExploreClick = {
-                    navController.navigate(AppRoutes.ArDefault) { launchSingleTop = true }
-                },
-            )
-        },
-    ) { innerPadding ->
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(ScanPangColors.Background)
                 .statusBarsPadding()
                 .padding(horizontal = ScanPangDimens.screenHorizontal)
-                .padding(bottom = ScanPangSpacing.lg),
+                .padding(bottom = ScanPangDimens.mainTabContentBottomInset + ScanPangSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
         ) {
             item {

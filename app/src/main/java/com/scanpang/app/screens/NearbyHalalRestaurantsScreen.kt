@@ -1,4 +1,4 @@
-package com.scanpang.app.screens.detail
+package com.scanpang.app.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,8 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
-import com.scanpang.app.components.ScanPangBottomBar
-import com.scanpang.app.components.ScanPangMainTab
 import com.scanpang.app.components.SearchResultBadgeKind
 import com.scanpang.app.components.SearchResultPlaceCard
 import com.scanpang.app.components.SearchResultTrustTag
@@ -60,33 +59,14 @@ fun NearbyHalalRestaurantsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
-        bottomBar = {
-            ScanPangBottomBar(
-                selectedTab = ScanPangMainTab.Home,
-                onHomeClick = {
-                    navController.navigate(AppRoutes.Home) { launchSingleTop = true }
-                },
-                onSearchClick = {
-                    navController.navigate(AppRoutes.Search) { launchSingleTop = true }
-                },
-                onSavedClick = {
-                    navController.navigate(AppRoutes.Saved) { launchSingleTop = true }
-                },
-                onProfileClick = {
-                    navController.navigate(AppRoutes.Profile) { launchSingleTop = true }
-                },
-                onExploreClick = {
-                    navController.navigate(AppRoutes.ArDefault) { launchSingleTop = true }
-                },
-            )
-        },
-    ) { innerPadding ->
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(ScanPangColors.Surface)
-                .statusBarsPadding(),
+                .statusBarsPadding()
+                .navigationBarsPadding(),
             contentPadding = PaddingValues(
                 horizontal = ScanPangDimens.screenHorizontal,
                 vertical = ScanPangSpacing.md,
@@ -184,7 +164,7 @@ fun NearbyHalalRestaurantsScreen(
                         SearchResultTrustTag("방문자 추천", Icons.Rounded.Star),
                     ),
                     onClick = {
-                        navController.navigate(AppRoutes.DetailRestaurant) { launchSingleTop = true }
+                        navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
                     },
                 )
             }
@@ -200,7 +180,7 @@ fun NearbyHalalRestaurantsScreen(
                         SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
                     ),
                     onClick = {
-                        navController.navigate(AppRoutes.DetailRestaurant) { launchSingleTop = true }
+                        navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
                     },
                 )
             }
@@ -214,7 +194,7 @@ fun NearbyHalalRestaurantsScreen(
                     isOpen = false,
                     trustTags = emptyList(),
                     onClick = {
-                        navController.navigate(AppRoutes.DetailRestaurant) { launchSingleTop = true }
+                        navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
                     },
                 )
             }

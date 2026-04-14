@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.CropFree
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Headset
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
@@ -672,6 +673,90 @@ fun ArFilterChipRow(
                 label = label,
                 selected = label == selected,
                 onClick = { onSelect(label) },
+            )
+        }
+    }
+}
+
+@Composable
+fun ArFilterChipRowMulti(
+    labels: List<String>,
+    selected: Set<String>,
+    onToggle: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+    ) {
+        labels.forEach { label ->
+            ArFilterChip(
+                label = label,
+                selected = label in selected,
+                onClick = { onToggle(label) },
+            )
+        }
+    }
+}
+
+@Composable
+fun BoxScope.ArExploreSideColumn(
+    onTtsClick: () -> Unit,
+    onCameraClick: () -> Unit,
+    isTtsOn: Boolean,
+    isFrozen: Boolean,
+) {
+    Column(
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(
+                end = ScanPangDimens.arSideColumnEnd,
+                top = ScanPangDimens.arSideColumnTop,
+            )
+            .width(ScanPangDimens.arSideColumnWidth),
+        verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arSideIconGap),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        ArExploreRoundSideButton(
+            icon = Icons.Rounded.Headset,
+            contentDescription = "음성 안내",
+            onClick = onTtsClick,
+            surfaceColor = ScanPangColors.ArOverlayWhite85,
+            iconTint = if (isTtsOn) ScanPangColors.OnSurfaceStrong else ScanPangColors.ArTtsOffIconTint,
+        )
+        ArExploreRoundSideButton(
+            icon = Icons.Rounded.CameraAlt,
+            contentDescription = "화면 고정",
+            onClick = onCameraClick,
+            surfaceColor = if (isFrozen) ScanPangColors.ArPrimaryTranslucent else ScanPangColors.ArOverlayWhite93,
+            iconTint = if (isFrozen) Color.White else ScanPangColors.OnSurfaceStrong,
+        )
+    }
+}
+
+@Composable
+private fun ArExploreRoundSideButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    surfaceColor: Color,
+    iconTint: Color,
+) {
+    Surface(
+        modifier = Modifier
+            .size(ScanPangDimens.arSideFab44)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        shape = CircleShape,
+        color = surfaceColor,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(ScanPangDimens.icon20),
+                tint = iconTint,
             )
         }
     }

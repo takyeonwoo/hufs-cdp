@@ -1,4 +1,4 @@
-package com.scanpang.app.screens.detail
+package com.scanpang.app.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -41,8 +42,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
-import com.scanpang.app.components.ScanPangBottomBar
-import com.scanpang.app.components.ScanPangMainTab
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -63,33 +62,14 @@ fun NearbyPrayerRoomsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
-        bottomBar = {
-            ScanPangBottomBar(
-                selectedTab = ScanPangMainTab.Home,
-                onHomeClick = {
-                    navController.navigate(AppRoutes.Home) { launchSingleTop = true }
-                },
-                onSearchClick = {
-                    navController.navigate(AppRoutes.Search) { launchSingleTop = true }
-                },
-                onSavedClick = {
-                    navController.navigate(AppRoutes.Saved) { launchSingleTop = true }
-                },
-                onProfileClick = {
-                    navController.navigate(AppRoutes.Profile) { launchSingleTop = true }
-                },
-                onExploreClick = {
-                    navController.navigate(AppRoutes.ArDefault) { launchSingleTop = true }
-                },
-            )
-        },
-    ) { innerPadding ->
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(ScanPangColors.Surface)
-                .statusBarsPadding(),
+                .statusBarsPadding()
+                .navigationBarsPadding(),
             contentPadding = PaddingValues(
                 horizontal = ScanPangDimens.screenHorizontal,
                 vertical = ScanPangSpacing.md,
@@ -222,7 +202,7 @@ fun NearbyPrayerRoomsScreen(
                     title = "명동 공중기도실",
                     subtitle = "도보 3분 · 지하 1층",
                     onClick = {
-                        navController.navigate(AppRoutes.DetailPrayerRoom) { launchSingleTop = true }
+                        navController.navigate(AppRoutes.PrayerRoomDetail) { launchSingleTop = true }
                     },
                 )
             }
@@ -231,7 +211,7 @@ fun NearbyPrayerRoomsScreen(
                     title = "회현역 무슬림 기도실",
                     subtitle = "도보 8분 · 환승 통로",
                     onClick = {
-                        navController.navigate(AppRoutes.DetailPrayerRoom) { launchSingleTop = true }
+                        navController.navigate(AppRoutes.PrayerRoomDetail) { launchSingleTop = true }
                     },
                 )
             }

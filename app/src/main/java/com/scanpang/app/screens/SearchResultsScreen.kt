@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.navigation.NavController
 import com.scanpang.app.ui.theme.ScanPangType
-import com.scanpang.app.components.ScanPangBottomBar
-import com.scanpang.app.components.ScanPangMainTab
 import com.scanpang.app.components.ScanPangSearchFieldFilled
 import com.scanpang.app.components.SearchResultBadgeKind
 import com.scanpang.app.components.SearchResultPlaceCard
@@ -88,25 +87,14 @@ fun SearchResultsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Background,
-        bottomBar = {
-            ScanPangBottomBar(
-                selectedTab = ScanPangMainTab.Search,
-                onHomeClick = { navController.navigate(AppRoutes.Home) { launchSingleTop = true } },
-                onSearchClick = { navController.navigate(AppRoutes.Search) { launchSingleTop = true } },
-                onSavedClick = { navController.navigate(AppRoutes.Saved) { launchSingleTop = true } },
-                onProfileClick = { navController.navigate(AppRoutes.Profile) { launchSingleTop = true } },
-                onExploreClick = {
-                    navController.navigate(AppRoutes.ArDefault) { launchSingleTop = true }
-                },
-            )
-        },
-    ) { innerPadding ->
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(ScanPangColors.Background)
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(ScanPangDimens.screenHorizontal),
             verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.lg),
         ) {
@@ -132,7 +120,9 @@ fun SearchResultsScreen(
                     distance = row.distance,
                     isOpen = true,
                     trustTags = row.trust,
-                    onClick = { },
+                    onClick = {
+                        navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
+                    },
                 )
             }
         }

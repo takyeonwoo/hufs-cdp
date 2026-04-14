@@ -8,13 +8,17 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.TurnSharpLeft
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import com.scanpang.app.components.ar.ArCameraBackdrop
 import com.scanpang.app.components.ar.ArNavActionCardCluster
-import com.scanpang.app.components.ar.ArNavAgentPanelContent
+import com.scanpang.app.components.ar.ArNavAiGuideTabWithTextField
 import com.scanpang.app.components.ar.ArNavBottomSheet
 import com.scanpang.app.components.ar.ArNavDefaultPoiMarkers
 import com.scanpang.app.components.ar.ArNavDestinationPill
@@ -26,14 +30,20 @@ import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 
+private const val NAV_TAB_MAP = "map"
+private const val NAV_TAB_AI = "ai"
+
 /**
- * Figma: ScanPang - AR 길안내 (지도) — node `162:1770`
+ * AR 길안내 — 지도 / AI 가이드 탭을 한 화면 내 상태로 전환.
  */
 @Composable
 fun ArNavigationMapScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
+    var activeTab by remember { mutableStateOf(NAV_TAB_MAP) }
+    var aiQuery by remember { mutableStateOf("") }
+
     Box(modifier = modifier.fillMaxSize()) {
         ArCameraBackdrop(showFreezeTint = false, modifier = Modifier.fillMaxSize())
 
@@ -50,7 +60,9 @@ fun ArNavigationMapScreen(
         ArNavTopHud(
             modifier = Modifier.align(Alignment.TopStart),
             onHomeClick = { navController.popBackStack() },
-            onSearchClick = { navController.navigate(AppRoutes.ArSearch) },
+            onSearchClick = {
+                navController.navigate(AppRoutes.ArExplore) { launchSingleTop = true }
+            },
             destinationPill = {
                 ArNavDestinationPill(
                     text = "명동성당 안내 중",
@@ -71,20 +83,18 @@ fun ArNavigationMapScreen(
                 .navigationBarsPadding(),
         ) {
             ArNavBottomSheet(
-                mapTabSelected = true,
-                onSelectMap = { },
-                onSelectAgent = {
-                    navController.navigate(AppRoutes.ArNavAgent) {
-                        launchSingleTop = true
-                    }
-                },
+                mapTabSelected = activeTab == NAV_TAB_MAP,
+                onSelectMap = { activeTab = NAV_TAB_MAP },
+                onSelectAgent = { activeTab = NAV_TAB_AI },
                 modifier = Modifier.fillMaxWidth(),
                 mapContent = { ArNavMapImageContent(Modifier.fillMaxSize()) },
                 agentContent = {
-                    ArNavAgentPanelContent(
+                    ArNavAiGuideTabWithTextField(
+                        query = aiQuery,
+                        onQueryChange = { aiQuery = it },
                         userMessage = "눈스퀘어가 뭐야?",
                         agentMessage = "거의 다 왔어요! 입구는 정면 오른쪽이에요.",
-                        inputPlaceholder = "무엇이든 물어보세요",
+                        placeholder = "무엇이든 물어보세요",
                     )
                 },
             )
