@@ -3,8 +3,13 @@ package com.scanpang.app.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import com.scanpang.app.screens.HomeScreen
 import com.scanpang.app.screens.NearbyHalalRestaurantsScreen
 import com.scanpang.app.screens.NearbyPrayerRoomsScreen
@@ -23,6 +28,12 @@ object AppRoutes {
     const val Qibla = "qibla"
     const val Search = "search"
     const val SearchResults = "search_results"
+
+    fun searchResultsRoute(query: String): String {
+        val encoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name())
+        return "$SearchResults/$encoded"
+    }
+
     const val Saved = "saved"
     const val Profile = "profile"
     const val NearbyHalal = "nearby_halal"
@@ -53,8 +64,23 @@ fun AppNavHost(
         composable(AppRoutes.Search) {
             SearchDefaultScreen(navController = navController)
         }
-        composable(AppRoutes.SearchResults) {
-            SearchResultsScreen(navController = navController)
+        composable(
+            route = "${AppRoutes.SearchResults}/{query}",
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            val raw = entry.arguments?.getString("query").orEmpty()
+            val query = runCatching {
+                URLDecoder.decode(raw, StandardCharsets.UTF_8.name())
+            }.getOrDefault(raw)
+            SearchResultsScreen(
+                navController = navController,
+                searchQuery = query,
+            )
         }
         composable(AppRoutes.Saved) {
             SavedPlacesScreen(navController = navController)

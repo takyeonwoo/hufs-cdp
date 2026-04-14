@@ -1,6 +1,8 @@
 package com.scanpang.app.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,13 +17,19 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Star
@@ -35,6 +43,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,10 +55,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.scanpang.app.data.SavedPlaceEntry
+import com.scanpang.app.data.SavedPlaceNavTarget
+import com.scanpang.app.data.SavedPlacesStore
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.ScanPangFigmaAssets
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -54,15 +75,80 @@ import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
+private const val DetailPlaceId = "place_halal_garden_myeongdong"
+private const val DetailPlaceName = "할랄가든 명동점"
+private const val DetailPlaceCategory = "할랄 식당"
+private const val DetailPlaceDistanceLine = "명동 · 도보 2분"
+private val DetailPlaceTags = listOf("할랄 인증", "방문자 추천")
+
 /**
  * Figma: 식당 상세 (`290:1325`)
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RestaurantDetailScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val gallery = ScanPangFigmaAssets.RestaurantDetailGallery
+    val pagerState = rememberPagerState(pageCount = { gallery.size })
+    var fullscreenOpen by remember { mutableStateOf(false) }
+    val savedStore = remember { SavedPlacesStore(context) }
+    var bookmarked by remember { mutableStateOf(savedStore.isSaved(DetailPlaceId)) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                bookmarked = savedStore.isSaved(DetailPlaceId)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    if (fullscreenOpen) {
+        Dialog(
+            onDismissRequest = { fullscreenOpen = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+            ) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(gallery[page])
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                IconButton(
+                    onClick = { fullscreenOpen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(ScanPangSpacing.sm),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "닫기",
+                        tint = Color.White,
+                    )
+                }
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -75,15 +161,20 @@ fun RestaurantDetailScreen(
                 .fillMaxWidth()
                 .height(ScanPangDimens.detailPhotoHeroHeight),
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(ScanPangFigmaAssets.RestaurantDetailHero)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
+            ) { page ->
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(gallery[page])
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
             IconButton(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier
@@ -104,21 +195,23 @@ fun RestaurantDetailScreen(
                     )
                 }
             }
-            Row(
+            IconButton(
+                onClick = { fullscreenOpen = true },
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = ScanPangSpacing.md),
-                horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.xs),
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(ScanPangSpacing.sm),
             ) {
-                repeat(3) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(ScanPangDimens.stackGap6)
-                            .clip(CircleShape)
-                            .background(
-                                if (index == 0) ScanPangColors.Primary
-                                else ScanPangColors.OutlineSubtle,
-                            ),
+                Surface(
+                    shape = CircleShape,
+                    color = ScanPangColors.ArOverlayWhite93,
+                    shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Fullscreen,
+                        contentDescription = "전체 화면",
+                        modifier = Modifier.padding(ScanPangSpacing.sm),
+                        tint = ScanPangColors.OnSurfaceStrong,
                     )
                 }
             }
@@ -130,7 +223,7 @@ fun RestaurantDetailScreen(
                 color = ScanPangColors.DetailImageCountScrim,
             ) {
                 Text(
-                    text = "1/4",
+                    text = "${pagerState.currentPage + 1}/${gallery.size}",
                     modifier = Modifier.padding(
                         horizontal = ScanPangSpacing.sm,
                         vertical = ScanPangDimens.badgePadVertical,
@@ -145,11 +238,50 @@ fun RestaurantDetailScreen(
             verticalArrangement = Arrangement.spacedBy(ScanPangDimens.detailSectionSpacing),
         ) {
             Spacer(modifier = Modifier.height(ScanPangSpacing.md))
-            Text(
-                text = "할랄가든 명동점",
-                style = ScanPangType.detailRestaurantTitle24,
-                color = ScanPangColors.OnSurfaceStrong,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+            ) {
+                Text(
+                    text = DetailPlaceName,
+                    style = ScanPangType.detailRestaurantTitle24,
+                    color = ScanPangColors.OnSurfaceStrong,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = {
+                        if (bookmarked) {
+                            savedStore.remove(DetailPlaceId)
+                            bookmarked = false
+                            Toast.makeText(context, "저장이 해제되었습니다", Toast.LENGTH_SHORT).show()
+                        } else {
+                            savedStore.save(
+                                SavedPlaceEntry(
+                                    id = DetailPlaceId,
+                                    name = DetailPlaceName,
+                                    category = DetailPlaceCategory,
+                                    distanceLine = DetailPlaceDistanceLine,
+                                    tags = DetailPlaceTags,
+                                    target = SavedPlaceNavTarget.Restaurant,
+                                ),
+                            )
+                            bookmarked = true
+                            Toast.makeText(context, "저장되었습니다", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                        contentDescription = if (bookmarked) "저장됨" else "저장",
+                        tint = if (bookmarked) {
+                            ScanPangColors.Primary
+                        } else {
+                            ScanPangColors.OnSurfacePlaceholder
+                        },
+                    )
+                }
+            }
             Text(
                 text = "한식 · 도보 2분",
                 style = ScanPangType.detailMetaSubtitle13,

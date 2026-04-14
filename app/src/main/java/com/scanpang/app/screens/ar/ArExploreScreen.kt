@@ -46,8 +46,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,9 +58,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
+import com.scanpang.app.ar.sendMessageToAgent
+import com.scanpang.app.components.ar.ArAgentChatMessage
 import com.scanpang.app.components.ar.ArCameraBackdrop
-import com.scanpang.app.components.ar.ArChatBottomSection
 import com.scanpang.app.components.ar.ArCircleIconButton
+import com.scanpang.app.components.ar.ArExploreInteractiveChatSection
+import com.scanpang.app.components.ar.ArFloorStoreGuideOverlay
+import com.scanpang.app.components.ar.ArPoiFloatingDetailOverlay
+import com.scanpang.app.components.ar.ArPoiTabBuilding
 import com.scanpang.app.components.ar.ArExploreSideColumn
 import com.scanpang.app.components.ar.ArFilterChipRow
 import com.scanpang.app.components.ar.ArFilterChipRowMulti
@@ -70,10 +77,6 @@ import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 import kotlinx.coroutines.launch
-
-private const val TAB_BUILDING = "building"
-private const val TAB_FLOORS = "floors"
-private const val TAB_AI = "ai"
 
 private data class ArSearchHit(
     val title: String,
@@ -91,6 +94,28 @@ fun ArExploreScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val chatListState = rememberLazyListState()
+    var chatInput by remember { mutableStateOf("") }
+    var chatMessages by remember {
+        mutableStateOf(
+            listOf(
+                ArAgentChatMessage(
+                    text = "안녕하세요! 스캔팡입니다. 주변 장소를 AR로 안내해 드릴게요.",
+                    isUser = false,
+                ),
+                ArAgentChatMessage(
+                    text = "아미나님, 오늘은 어떤 할랄 맛집을 찾으세요?",
+                    isUser = true,
+                ),
+            ),
+        )
+    }
+
+    LaunchedEffect(chatMessages.size) {
+        if (chatMessages.isNotEmpty()) {
+            chatListState.scrollToItem(chatMessages.lastIndex)
+        }
+    }
 
     var isFilterOpen by remember { mutableStateOf(false) }
     var categorySelection by remember { mutableStateOf(setOf<String>()) }
@@ -103,7 +128,7 @@ fun ArExploreScreen(
     var isTtsOn by remember { mutableStateOf(true) }
 
     var selectedPoi by remember { mutableStateOf<String?>(null) }
-    var activeDetailTab by remember { mutableStateOf(TAB_BUILDING) }
+    var activeDetailTab by remember { mutableStateOf(ArPoiTabBuilding) }
     var selectedStore by remember { mutableStateOf<String?>(null) }
 
     val categories = remember {
@@ -200,12 +225,12 @@ fun ArExploreScreen(
                 ArPoiPinsLayer(
                     onPoiOneClick = {
                         selectedPoi = "눈스퀘어"
-                        activeDetailTab = TAB_BUILDING
+                        activeDetailTab = ArPoiTabBuilding
                         selectedStore = null
                     },
                     onPoiTwoClick = {
                         selectedPoi = "명동빌딩"
-                        activeDetailTab = TAB_BUILDING
+                        activeDetailTab = ArPoiTabBuilding
                         selectedStore = null
                     },
                 )
@@ -227,10 +252,20 @@ fun ArExploreScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding(),
             ) {
-                ArChatBottomSection(
-                    userMessage = "아미나님, 오늘은 어떤 할랄 맛집을 찾으세요?",
-                    agentMessage = "안녕하세요! 스캔팡입니다. 주변 장소를 AR로 안내해 드릴게요.",
-                    inputPlaceholder = "무엇이든 물어보세요",
+                ArExploreInteractiveChatSection(
+                    messages = chatMessages,
+                    inputText = chatInput,
+                    onInputChange = { chatInput = it },
+                    onSend = {
+                        val q = chatInput.trim()
+                        if (q.isEmpty()) return@ArExploreInteractiveChatSection
+                        val reply = sendMessageToAgent(q)
+                        chatMessages = chatMessages +
+                            ArAgentChatMessage(text = q, isUser = true) +
+                            ArAgentChatMessage(text = reply, isUser = false)
+                        chatInput = ""
+                    },
+                    listState = chatListState,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -474,7 +509,7 @@ fun ArExploreScreen(
                                             TextButton(
                                                 onClick = {
                                                     selectedPoi = hit.title
-                                                    activeDetailTab = TAB_BUILDING
+                                                    activeDetailTab = ArPoiTabBuilding
                                                     isSearchOpen = false
                                                     showArSearchResults = false
                                                 },
@@ -510,178 +545,31 @@ fun ArExploreScreen(
                 }
             }
 
-            AnimatedVisibility(
-                visible = selectedPoi != null,
-                enter = slideInVertically { it },
-                exit = slideOutVertically { it },
-            ) {
-                val poi = selectedPoi ?: return@AnimatedVisibility
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(ScanPangColors.ArOverlayScrimDark)
-                            .clickable {
-                                selectedPoi = null
-                                selectedStore = null
-                                activeDetailTab = TAB_BUILDING
-                            },
-                    )
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(ScanPangDimens.arPoiSheetMaxHeight)
-                            .clickable(enabled = false) { },
-                        shape = ScanPangShapes.arFilterPanelTop,
-                        color = ScanPangColors.DetailArPanelSurface,
-                        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(ScanPangSpacing.lg),
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = poi,
-                                    style = ScanPangType.detailPlaceTitle18,
-                                    color = ScanPangColors.OnSurfaceStrong,
-                                    modifier = Modifier.weight(1f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                IconButton(
-                                    onClick = {
-                                        selectedPoi = null
-                                        selectedStore = null
-                                    },
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Close,
-                                        contentDescription = "닫기",
-                                        tint = ScanPangColors.OnSurfaceStrong,
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(ScanPangSpacing.sm))
-                            PoiDetailTabRow(
-                                active = activeDetailTab,
-                                onSelect = { activeDetailTab = it },
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = ScanPangSpacing.sm),
-                                color = ScanPangColors.OutlineSubtle,
-                            )
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .verticalScroll(rememberScrollState()),
-                            ) {
-                                when (activeDetailTab) {
-                                    TAB_BUILDING -> {
-                                        Text(
-                                            text = "$poi 은(는) 명동 일대 대표 쇼핑·문화 공간입니다. 아미나님께서 한눈에 동선을 파악하실 수 있도록 안내드릴게요.",
-                                            style = ScanPangType.detailBody12Loose,
-                                            color = ScanPangColors.OnSurfaceMuted,
-                                        )
-                                    }
-                                    TAB_FLOORS -> {
-                                        Text(
-                                            text = "층별 매장",
-                                            style = ScanPangType.title14,
-                                            color = ScanPangColors.OnSurfaceStrong,
-                                        )
-                                        Spacer(modifier = Modifier.height(ScanPangSpacing.sm))
-                                        Text(
-                                            text = "할랄가든 명동점 · 2층",
-                                            style = ScanPangType.body15Medium,
-                                            color = ScanPangColors.Primary,
-                                            modifier = Modifier
-                                                .clip(ScanPangShapes.radius12)
-                                                .clickable {
-                                                    selectedStore = "할랄가든 명동점"
-                                                }
-                                                .padding(vertical = ScanPangSpacing.sm),
-                                        )
-                                    }
-                                    TAB_AI -> {
-                                        Text(
-                                            text = "AI 가이드",
-                                            style = ScanPangType.title14,
-                                            color = ScanPangColors.OnSurfaceStrong,
-                                        )
-                                        Spacer(modifier = Modifier.height(ScanPangSpacing.sm))
-                                        Text(
-                                            text = "이 건물은 보행 동선이 짧고 엘리베이터 위치가 명확해 이동이 편합니다.",
-                                            style = ScanPangType.detailBody12Loose,
-                                            color = ScanPangColors.OnSurfaceMuted,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            selectedPoi?.let { poi ->
+                ArPoiFloatingDetailOverlay(
+                    poiName = poi,
+                    activeDetailTab = activeDetailTab,
+                    onActiveDetailTabChange = { activeDetailTab = it },
+                    onDismiss = {
+                        selectedPoi = null
+                        selectedStore = null
+                        activeDetailTab = ArPoiTabBuilding
+                    },
+                    onFloorStoreClick = { selectedStore = it },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
 
-            AnimatedVisibility(
-                visible = selectedStore != null,
-                enter = slideInVertically { it },
-                exit = slideOutVertically { it },
-            ) {
-                val store = selectedStore ?: return@AnimatedVisibility
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(ScanPangColors.ArOverlayScrimDark)
-                        .clickable { selectedStore = null },
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(ScanPangSpacing.lg)
-                            .clickable(enabled = false) { },
-                        shape = ScanPangShapes.radius16,
-                        color = ScanPangColors.Surface,
-                        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-                    ) {
-                        Column(modifier = Modifier.padding(ScanPangSpacing.lg)) {
-                            Text(
-                                text = store,
-                                style = ScanPangType.title16SemiBold,
-                                color = ScanPangColors.OnSurfaceStrong,
-                            )
-                            Spacer(modifier = Modifier.height(ScanPangSpacing.sm))
-                            Text(
-                                text = "HALAL MEAT · 한식 · 영업 중",
-                                style = ScanPangType.caption12Medium,
-                                color = ScanPangColors.OnSurfaceMuted,
-                            )
-                            Spacer(modifier = Modifier.height(ScanPangSpacing.md))
-                            Button(
-                                onClick = {
-                                    navController.navigate(AppRoutes.ArNavMap) {
-                                        launchSingleTop = true
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = ScanPangColors.Primary,
-                                    contentColor = Color.White,
-                                ),
-                                shape = ScanPangShapes.radius12,
-                            ) {
-                                Text("길안내", style = ScanPangType.body15Medium)
-                            }
-                        }
-                    }
-                }
+            selectedStore?.let { store ->
+                ArFloorStoreGuideOverlay(
+                    storeName = store,
+                    onDismiss = { selectedStore = null },
+                    onStartNavigation = {
+                        navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                        selectedStore = null
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
@@ -813,45 +701,3 @@ private fun buildFilterPillLabel(selected: Set<String>): String {
     return "${list[0]} 외 ${list.size - 1}개"
 }
 
-@Composable
-private fun PoiDetailTabRow(
-    active: String,
-    onSelect: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
-    ) {
-        listOf(
-            TAB_BUILDING to "건물정보",
-            TAB_FLOORS to "층별정보",
-            TAB_AI to "AI가이드",
-        ).forEach { (key, label) ->
-            val sel = active == key
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(ScanPangShapes.radius12)
-                    .clickable { onSelect(key) },
-                shape = ScanPangShapes.radius12,
-                color = if (sel) ScanPangColors.PrimarySoft else ScanPangColors.Background,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = ScanPangSpacing.sm),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = label,
-                        style = if (sel) ScanPangType.meta11SemiBold else ScanPangType.meta11Medium,
-                        color = if (sel) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
-        }
-    }
-}

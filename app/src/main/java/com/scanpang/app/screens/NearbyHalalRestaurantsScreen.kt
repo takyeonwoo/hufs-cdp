@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -46,6 +46,26 @@ import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
+private val filterLabels = listOf(
+    "전체",
+    "HALAL MEAT",
+    "SEAFOOD",
+    "VEGGIE",
+    "SALAM SEOUL",
+)
+
+private data class NearbyHalalPlace(
+    val title: String,
+    /** [filterLabels] 중 카테고리 칩과 동일한 문자열 (전체 제외) */
+    val categoryFilter: String,
+    val badgeKind: SearchResultBadgeKind,
+    val badgeLabel: String,
+    val cuisineLabel: String,
+    val distance: String,
+    val isOpen: Boolean,
+    val trustTags: List<SearchResultTrustTag>,
+)
+
 /**
  * Figma: 주변 할랄 식당 (`290:2034`)
  */
@@ -55,7 +75,123 @@ fun NearbyHalalRestaurantsScreen(
     modifier: Modifier = Modifier,
 ) {
     var filterIndex by remember { mutableIntStateOf(0) }
-    val filterLabels = listOf("전체", "거리순", "할랄 인증")
+
+    val allPlaces = remember {
+        listOf(
+            NearbyHalalPlace(
+                title = "할랄가든 명동점",
+                categoryFilter = "HALAL MEAT",
+                badgeKind = SearchResultBadgeKind.HalalMeat,
+                badgeLabel = "HALAL MEAT",
+                cuisineLabel = "한식",
+                distance = "120m",
+                isOpen = true,
+                trustTags = listOf(
+                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
+                    SearchResultTrustTag("방문자 추천", Icons.Rounded.Star),
+                ),
+            ),
+            NearbyHalalPlace(
+                title = "이스탄불 카페",
+                categoryFilter = "HALAL MEAT",
+                badgeKind = SearchResultBadgeKind.HalalMeat,
+                badgeLabel = "HALAL MEAT",
+                cuisineLabel = "터키",
+                distance = "240m",
+                isOpen = true,
+                trustTags = listOf(
+                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
+                ),
+            ),
+            NearbyHalalPlace(
+                title = "레팍라 식당",
+                categoryFilter = "HALAL MEAT",
+                badgeKind = SearchResultBadgeKind.HalalMeat,
+                badgeLabel = "HALAL MEAT",
+                cuisineLabel = "말레이시아",
+                distance = "310m",
+                isOpen = true,
+                trustTags = listOf(
+                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
+                ),
+            ),
+            NearbyHalalPlace(
+                title = "바다향 횟집",
+                categoryFilter = "SEAFOOD",
+                badgeKind = SearchResultBadgeKind.Seafood,
+                badgeLabel = "SEAFOOD",
+                cuisineLabel = "해산물",
+                distance = "350m",
+                isOpen = false,
+                trustTags = emptyList(),
+            ),
+            NearbyHalalPlace(
+                title = "제주 해물탕",
+                categoryFilter = "SEAFOOD",
+                badgeKind = SearchResultBadgeKind.Seafood,
+                badgeLabel = "SEAFOOD",
+                cuisineLabel = "한식 · 해산물",
+                distance = "480m",
+                isOpen = true,
+                trustTags = listOf(
+                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
+                ),
+            ),
+            NearbyHalalPlace(
+                title = "그린샐러드 하우스",
+                categoryFilter = "VEGGIE",
+                badgeKind = SearchResultBadgeKind.Veggie,
+                badgeLabel = "VEGGIE",
+                cuisineLabel = "샐러드 · 비건",
+                distance = "180m",
+                isOpen = true,
+                trustTags = listOf(
+                    SearchResultTrustTag("방문자 추천", Icons.Rounded.Star),
+                ),
+            ),
+            NearbyHalalPlace(
+                title = "포레스트 키친",
+                categoryFilter = "VEGGIE",
+                badgeKind = SearchResultBadgeKind.Veggie,
+                badgeLabel = "VEGGIE",
+                cuisineLabel = "채식 뷔페",
+                distance = "420m",
+                isOpen = true,
+                trustTags = emptyList(),
+            ),
+            NearbyHalalPlace(
+                title = "살람서울 명동",
+                categoryFilter = "SALAM SEOUL",
+                badgeKind = SearchResultBadgeKind.SalamSeoul,
+                badgeLabel = "SALAM SEOUL",
+                cuisineLabel = "퓨전",
+                distance = "95m",
+                isOpen = true,
+                trustTags = listOf(
+                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
+                ),
+            ),
+            NearbyHalalPlace(
+                title = "살람서울 카페",
+                categoryFilter = "SALAM SEOUL",
+                badgeKind = SearchResultBadgeKind.SalamSeoul,
+                badgeLabel = "SALAM SEOUL",
+                cuisineLabel = "디저트",
+                distance = "260m",
+                isOpen = false,
+                trustTags = emptyList(),
+            ),
+        )
+    }
+
+    val visiblePlaces = remember(filterIndex, allPlaces) {
+        if (filterIndex == 0) allPlaces
+        else {
+            val key = filterLabels[filterIndex]
+            allPlaces.filter { it.categoryFilter == key }
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
@@ -151,48 +287,18 @@ fun NearbyHalalRestaurantsScreen(
                     }
                 }
             }
-            item {
+            items(
+                items = visiblePlaces,
+                key = { it.title + it.distance },
+            ) { place ->
                 SearchResultPlaceCard(
-                    title = "할랄가든 명동점",
-                    badgeKind = SearchResultBadgeKind.HalalMeat,
-                    badgeLabel = "HALAL MEAT",
-                    cuisineLabel = "한식",
-                    distance = "120m",
-                    isOpen = true,
-                    trustTags = listOf(
-                        SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
-                        SearchResultTrustTag("방문자 추천", Icons.Rounded.Star),
-                    ),
-                    onClick = {
-                        navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
-                    },
-                )
-            }
-            item {
-                SearchResultPlaceCard(
-                    title = "이스탄불 카페",
-                    badgeKind = SearchResultBadgeKind.HalalMeat,
-                    badgeLabel = "HALAL MEAT",
-                    cuisineLabel = "터키",
-                    distance = "240m",
-                    isOpen = true,
-                    trustTags = listOf(
-                        SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
-                    ),
-                    onClick = {
-                        navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
-                    },
-                )
-            }
-            item {
-                SearchResultPlaceCard(
-                    title = "바다향 횟집",
-                    badgeKind = SearchResultBadgeKind.Seafood,
-                    badgeLabel = "SEAFOOD",
-                    cuisineLabel = "해산물",
-                    distance = "350m",
-                    isOpen = false,
-                    trustTags = emptyList(),
+                    title = place.title,
+                    badgeKind = place.badgeKind,
+                    badgeLabel = place.badgeLabel,
+                    cuisineLabel = place.cuisineLabel,
+                    distance = place.distance,
+                    isOpen = place.isOpen,
+                    trustTags = place.trustTags,
                     onClick = {
                         navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
                     },

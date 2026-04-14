@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import com.scanpang.app.components.ar.ArCameraBackdrop
+import com.scanpang.app.components.ar.ArFloorStoreGuideOverlay
 import com.scanpang.app.components.ar.ArNavActionCardCluster
 import com.scanpang.app.components.ar.ArNavAiGuideTabWithTextField
 import com.scanpang.app.components.ar.ArNavBottomSheet
@@ -26,6 +27,8 @@ import com.scanpang.app.components.ar.ArNavMapImageContent
 import com.scanpang.app.components.ar.ArNavSideVolumeCamera
 import com.scanpang.app.components.ar.ArNavTopHud
 import com.scanpang.app.components.ar.ArNavTurnBadge
+import com.scanpang.app.components.ar.ArPoiFloatingDetailOverlay
+import com.scanpang.app.components.ar.ArPoiTabBuilding
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -43,6 +46,9 @@ fun ArNavigationMapScreen(
 ) {
     var activeTab by remember { mutableStateOf(NAV_TAB_MAP) }
     var aiQuery by remember { mutableStateOf("") }
+    var selectedPoi by remember { mutableStateOf<String?>(null) }
+    var activePoiDetailTab by remember { mutableStateOf(ArPoiTabBuilding) }
+    var selectedStore by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = modifier.fillMaxSize()) {
         ArCameraBackdrop(showFreezeTint = false, modifier = Modifier.fillMaxSize())
@@ -55,7 +61,18 @@ fun ArNavigationMapScreen(
             currentInstruction = "스타벅스에서 좌회전",
         )
 
-        ArNavDefaultPoiMarkers()
+        ArNavDefaultPoiMarkers(
+            onShoppingPoiClick = {
+                selectedPoi = "눈스퀘어"
+                activePoiDetailTab = ArPoiTabBuilding
+                selectedStore = null
+            },
+            onExchangePoiClick = {
+                selectedPoi = "명동 환전소"
+                activePoiDetailTab = ArPoiTabBuilding
+                selectedStore = null
+            },
+        )
 
         ArNavTopHud(
             modifier = Modifier.align(Alignment.TopStart),
@@ -106,5 +123,32 @@ fun ArNavigationMapScreen(
             badgeColor = ScanPangColors.ArNavPrimaryBadge90,
             iconTint = Color.White,
         )
+
+        selectedPoi?.let { poi ->
+            ArPoiFloatingDetailOverlay(
+                poiName = poi,
+                activeDetailTab = activePoiDetailTab,
+                onActiveDetailTabChange = { activePoiDetailTab = it },
+                onDismiss = {
+                    selectedPoi = null
+                    selectedStore = null
+                    activePoiDetailTab = ArPoiTabBuilding
+                },
+                onFloorStoreClick = { selectedStore = it },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        selectedStore?.let { store ->
+            ArFloorStoreGuideOverlay(
+                storeName = store,
+                onDismiss = { selectedStore = null },
+                onStartNavigation = {
+                    navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                    selectedStore = null
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
 }

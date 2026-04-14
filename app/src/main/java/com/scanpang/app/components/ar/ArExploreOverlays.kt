@@ -19,10 +19,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.CropFree
 import androidx.compose.material.icons.rounded.FilterList
@@ -42,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -269,7 +279,8 @@ fun ArPoiCard(
     val clickMod = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Surface(
         modifier = modifier
-            .height(ScanPangDimens.arPoiCardHeight)
+            .wrapContentWidth()
+            .heightIn(min = ScanPangDimens.arPoiCardHeight)
             .then(clickMod),
         shape = ScanPangShapes.arPoiCard,
         color = ScanPangColors.Surface,
@@ -298,20 +309,126 @@ fun ArPoiCard(
                     )
                 }
             }
-            Column(verticalArrangement = Arrangement.spacedBy(ScanPangDimens.icon5)) {
+            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                 Text(
                     text = title,
                     style = ScanPangType.chip13SemiBold,
                     color = ScanPangColors.ArPoiTitle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = subtitle,
                     style = ScanPangType.meta11Medium,
                     color = ScanPangColors.ArPoiSubtitle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+private val ArAgentUserBubbleBlue = Color(0xFF1A73E8)
+
+data class ArAgentChatMessage(
+    val text: String,
+    val isUser: Boolean,
+)
+
+@Composable
+fun ArExploreInteractiveChatSection(
+    messages: List<ArAgentChatMessage>,
+    inputText: String,
+    onInputChange: (String) -> Unit,
+    onSend: () -> Unit,
+    listState: LazyListState,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(ScanPangColors.ArBottomChatScrim)
+            .padding(horizontal = ScanPangDimens.arTopBarHorizontal)
+            .padding(bottom = ScanPangDimens.arChatAreaBottomPad),
+        verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arChatBubbleGap),
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 220.dp),
+            verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arChatBubbleGap),
+        ) {
+            itemsIndexed(messages, key = { index, msg -> "$index-${msg.isUser}-${msg.text}" }) { _, msg ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start,
+                ) {
+                    Surface(
+                        shape = if (msg.isUser) ScanPangShapes.arBubbleUser else ScanPangShapes.arBubbleAgent,
+                        color = if (msg.isUser) ArAgentUserBubbleBlue else Color.White,
+                        shadowElevation = if (msg.isUser) 0.dp else 2.dp,
+                    ) {
+                        Text(
+                            text = msg.text,
+                            modifier = Modifier.padding(ScanPangSpacing.md),
+                            style = ScanPangType.arChatBody14,
+                            color = if (msg.isUser) Color.White else ScanPangColors.OnSurfaceStrong,
+                        )
+                    }
+                }
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = ScanPangDimens.arInputBarMinHeight)
+                .clip(ScanPangShapes.arInputPill)
+                .background(ScanPangColors.ArOverlayWhite93)
+                .padding(
+                    horizontal = ScanPangDimens.arInputInnerPadH,
+                    vertical = ScanPangDimens.arInputInnerPadV,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Mic,
+                contentDescription = null,
+                modifier = Modifier.size(ScanPangDimens.arMicSendIcon),
+                tint = ScanPangColors.OnSurfaceMuted,
+            )
+            TextField(
+                value = inputText,
+                onValueChange = onInputChange,
+                modifier = Modifier.weight(1f),
+                placeholder = {
+                    Text(
+                        text = "무엇이든 물어보세요",
+                        style = ScanPangType.searchPlaceholderRegular,
+                        color = ScanPangColors.OnSurfacePlaceholder,
+                    )
+                },
+                textStyle = ScanPangType.body15Medium.copy(color = ScanPangColors.OnSurfaceStrong),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { onSend() }),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    cursorColor = ScanPangColors.Primary,
+                ),
+            )
+            IconButton(
+                onClick = onSend,
+                enabled = inputText.isNotBlank(),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.Send,
+                    contentDescription = "전송",
+                    modifier = Modifier.size(ScanPangDimens.icon16),
+                    tint = if (inputText.isNotBlank()) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
                 )
             }
         }

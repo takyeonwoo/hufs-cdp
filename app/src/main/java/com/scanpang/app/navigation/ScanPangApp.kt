@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.scanpang.app.components.ScanPangMainTab
@@ -35,12 +34,13 @@ fun ScanPangApp(modifier: Modifier = Modifier) {
             ScanPangTabBar(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 selectedTab = when (currentRoute) {
+                    AppRoutes.Home -> ScanPangMainTab.Home
                     AppRoutes.Search -> ScanPangMainTab.Search
                     AppRoutes.Saved -> ScanPangMainTab.Saved
                     AppRoutes.Profile -> ScanPangMainTab.Profile
                     else -> ScanPangMainTab.Home
                 },
-                onHomeClick = { navigateMainTab(navController, AppRoutes.Home) },
+                onHomeClick = { navigateToHome(navController) },
                 onSearchClick = { navigateMainTab(navController, AppRoutes.Search) },
                 onSavedClick = { navigateMainTab(navController, AppRoutes.Saved) },
                 onProfileClick = { navigateMainTab(navController, AppRoutes.Profile) },
@@ -52,10 +52,18 @@ fun ScanPangApp(modifier: Modifier = Modifier) {
     }
 }
 
+private fun navigateToHome(navController: androidx.navigation.NavController) {
+    navController.navigate(AppRoutes.Home) {
+        popUpTo(AppRoutes.Home) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
 private fun navigateMainTab(navController: androidx.navigation.NavController, route: String) {
     navController.navigate(route) {
-        popUpTo(navController.graph.findStartDestination().id) {
+        popUpTo(AppRoutes.Home) {
             saveState = true
+            inclusive = false
         }
         launchSingleTop = true
         restoreState = true

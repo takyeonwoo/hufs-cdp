@@ -39,9 +39,11 @@ private data class ResultItem(
 @Composable
 fun SearchResultsScreen(
     navController: NavController,
+    searchQuery: String,
     modifier: Modifier = Modifier,
 ) {
-    val items = listOf(
+    val displayQuery = searchQuery.trim().ifEmpty { "검색" }
+    val resultItems = listOf(
         ResultItem(
             title = "명동부산집",
             badgeKind = SearchResultBadgeKind.HalalMeat,
@@ -100,18 +102,18 @@ fun SearchResultsScreen(
         ) {
             item {
                 ScanPangSearchFieldFilled(
-                    query = "할랄 식당",
+                    query = displayQuery,
                     onClearClick = { navController.popBackStack() },
                 )
             }
             item {
                 Text(
-                    text = "검색 결과 12개",
+                    text = "‘$displayQuery’ 검색 결과 ${resultItems.size}개",
                     style = ScanPangType.link13,
                     color = ScanPangColors.OnSurfaceMuted,
                 )
             }
-            items(items) { row ->
+            items(resultItems) { row ->
                 SearchResultPlaceCard(
                     title = row.title,
                     badgeKind = row.badgeKind,

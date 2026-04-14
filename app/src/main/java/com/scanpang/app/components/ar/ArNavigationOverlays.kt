@@ -335,11 +335,14 @@ fun BoxScope.ArNavPoiFab(
     icon: ImageVector,
     tint: Color,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
+    val clickMod = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Surface(
         modifier = modifier
             .align(Alignment.TopStart)
-            .size(ScanPangDimens.arNavPoiFab),
+            .size(ScanPangDimens.arNavPoiFab)
+            .then(clickMod),
         shape = CircleShape,
         color = ScanPangColors.Surface,
         shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
@@ -839,7 +842,10 @@ fun BoxScope.ArArrivalBadgeStack(
 
 /** 길안내 POI: 쇼핑(왼쪽)·환전(오른쪽) — Figma 위치 */
 @Composable
-fun BoxScope.ArNavDefaultPoiMarkers() {
+fun BoxScope.ArNavDefaultPoiMarkers(
+    onShoppingPoiClick: () -> Unit = {},
+    onExchangePoiClick: () -> Unit = {},
+) {
     ArNavPoiFab(
         icon = Icons.Rounded.LocalMall,
         tint = ScanPangColors.CategoryMall,
@@ -847,6 +853,7 @@ fun BoxScope.ArNavDefaultPoiMarkers() {
             start = ScanPangDimens.arNavPoiOneStart,
             top = ScanPangDimens.arNavPoiOneTop,
         ),
+        onClick = onShoppingPoiClick,
     )
     ArNavPoiFab(
         icon = Icons.Rounded.CurrencyExchange,
@@ -855,5 +862,6 @@ fun BoxScope.ArNavDefaultPoiMarkers() {
             start = ScanPangDimens.arNavPoiTwoStart,
             top = ScanPangDimens.arNavPoiTwoTop,
         ),
+        onClick = onExchangePoiClick,
     )
 }

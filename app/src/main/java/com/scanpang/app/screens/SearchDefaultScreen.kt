@@ -3,7 +3,6 @@ package com.scanpang.app.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Coffee
@@ -26,16 +27,27 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import com.scanpang.app.components.RecentSearchRow
 import com.scanpang.app.components.ScanPangCategoryTile
 import com.scanpang.app.components.ScanPangSuggestionRow
+import com.scanpang.app.data.SearchHistoryPreferences
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -44,13 +56,28 @@ import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
 /**
- * 검색 기본 — 검색바는 키보드 없이 탭 시 결과 화면으로 이동.
+ * 검색 기본 — TextField로 입력 후 IME 검색 시 결과 화면으로 이동.
  */
 @Composable
 fun SearchDefaultScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val historyPrefs = remember { SearchHistoryPreferences(context) }
+    var recent by remember { mutableStateOf(historyPrefs.getRecent()) }
+    var query by remember { mutableStateOf("") }
+
+    fun runSearch(raw: String) {
+        val q = raw.trim()
+        if (q.isEmpty()) return
+        keyboard?.hide()
+        historyPrefs.add(q)
+        recent = historyPrefs.getRecent()
+        navController.navigate(AppRoutes.searchResultsRoute(q))
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
@@ -66,37 +93,44 @@ fun SearchDefaultScreen(
                 .padding(bottom = ScanPangDimens.mainTabContentBottomInset + ScanPangSpacing.lg),
             verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.xl),
         ) {
-            Box(
+            TextField(
+                value = query,
+                onValueChange = { query = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ScanPangDimens.searchBarHeightDefault)
-                    .clip(ScanPangShapes.radius14)
-                    .background(ScanPangColors.Background)
-                    .clickable { navController.navigate(AppRoutes.SearchResults) },
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = ScanPangSpacing.lg),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.rowGap10),
-                ) {
+                    .clip(ScanPangShapes.radius14),
+                placeholder = {
+                    Text(
+                        text = "장소, 식당, 카테고리 검색",
+                        style = ScanPangType.searchPlaceholderRegular,
+                        color = ScanPangColors.OnSurfacePlaceholder,
+                    )
+                },
+                leadingIcon = {
                     Icon(
                         imageVector = Icons.Rounded.Search,
                         contentDescription = null,
                         modifier = Modifier.size(ScanPangDimens.icon18),
                         tint = ScanPangColors.OnSurfacePlaceholder,
                     )
-                    Text(
-                        text = "장소, 식당, 카테고리 검색",
-                        style = ScanPangType.searchPlaceholderRegular,
-                        color = ScanPangColors.OnSurfacePlaceholder,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+                },
+                textStyle = ScanPangType.body15Medium.copy(color = ScanPangColors.OnSurfaceStrong),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = { runSearch(query) },
+                ),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = ScanPangColors.Background,
+                    unfocusedContainerColor = ScanPangColors.Background,
+                    disabledContainerColor = ScanPangColors.Background,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    cursorColor = ScanPangColors.Primary,
+                ),
+            )
             Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -112,28 +146,22 @@ fun SearchDefaultScreen(
                         text = "전체 삭제",
                         style = ScanPangType.caption12Medium,
                         color = ScanPangColors.OnSurfacePlaceholder,
+                        modifier = Modifier.clickable {
+                            historyPrefs.clearAll()
+                            recent = emptyList()
+                        },
                     )
                 }
-                RecentSearchRow(
-                    query = "할랄 식당",
-                    onRowClick = { navController.navigate(AppRoutes.SearchResults) },
-                    onRemoveClick = { },
-                )
-                RecentSearchRow(
-                    query = "기도실",
-                    onRowClick = { navController.navigate(AppRoutes.SearchResults) },
-                    onRemoveClick = { },
-                )
-                RecentSearchRow(
-                    query = "명동교자",
-                    onRowClick = { navController.navigate(AppRoutes.SearchResults) },
-                    onRemoveClick = { },
-                )
-                RecentSearchRow(
-                    query = "환전소",
-                    onRowClick = { navController.navigate(AppRoutes.SearchResults) },
-                    onRemoveClick = { },
-                )
+                recent.forEach { item ->
+                    RecentSearchRow(
+                        query = item,
+                        onRowClick = { runSearch(item) },
+                        onRemoveClick = {
+                            historyPrefs.remove(item)
+                            recent = historyPrefs.getRecent()
+                        },
+                    )
+                }
             }
             Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.lg)) {
                 Text(
@@ -164,14 +192,14 @@ fun SearchDefaultScreen(
                             label = "카페",
                             icon = Icons.Rounded.Coffee,
                             iconTint = ScanPangColors.CategoryCafe,
-                            onClick = { },
+                            onClick = { runSearch("카페") },
                             modifier = Modifier.weight(1f),
                         )
                         ScanPangCategoryTile(
                             label = "쇼핑",
                             icon = Icons.Rounded.LocalMall,
                             iconTint = ScanPangColors.CategoryMall,
-                            onClick = { },
+                            onClick = { runSearch("쇼핑") },
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -183,28 +211,28 @@ fun SearchDefaultScreen(
                             label = "병원",
                             icon = Icons.Rounded.LocalHospital,
                             iconTint = ScanPangColors.CategoryMedical,
-                            onClick = { },
+                            onClick = { runSearch("병원") },
                             modifier = Modifier.weight(1f),
                         )
                         ScanPangCategoryTile(
                             label = "약국",
                             icon = Icons.Rounded.Medication,
                             iconTint = ScanPangColors.CategoryMedical,
-                            onClick = { },
+                            onClick = { runSearch("약국") },
                             modifier = Modifier.weight(1f),
                         )
                         ScanPangCategoryTile(
                             label = "환전소",
                             icon = Icons.Rounded.CurrencyExchange,
                             iconTint = ScanPangColors.CategoryExchange,
-                            onClick = { },
+                            onClick = { runSearch("환전소") },
                             modifier = Modifier.weight(1f),
                         )
                         ScanPangCategoryTile(
                             label = "관광지",
                             icon = Icons.Rounded.Place,
                             iconTint = ScanPangColors.Primary,
-                            onClick = { },
+                            onClick = { runSearch("관광지") },
                             modifier = Modifier.weight(1f),
                         )
                     }

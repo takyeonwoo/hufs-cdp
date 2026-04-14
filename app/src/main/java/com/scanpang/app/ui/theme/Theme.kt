@@ -43,6 +43,12 @@ object ScanPangColors {
     val HalalMeatBadgeText = Color(0xFF7B1E1E)
     /** SEAFOOD 뱃지 배경 rgba(26,115,232,0.07) */
     val SeafoodBadgeBackground = Color(0x121A73E8)
+    /** VEGGIE 뱃지 */
+    val VeggieBadgeBackground = Color(0x1234A853)
+    val VeggieBadgeText = Color(0xFF15803D)
+    /** SALAM SEOUL 뱃지 */
+    val SalamSeoulBadgeBackground = Color(0x127C3AED)
+    val SalamSeoulBadgeText = Color(0xFF6D28D9)
     /** 영업 중·오픈 상태 (#10B981) */
     val StatusOpen = Color(0xFF10B981)
     /** 신뢰 태그 배경 rgba(16,185,129,0.06) */
