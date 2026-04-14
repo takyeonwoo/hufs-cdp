@@ -295,6 +295,7 @@ object ScanPangDimens {
     val arArrivalStackGap: Dp = 4.dp
 
     val detailArPanelTop: Dp = 230.dp
+    val detailArPanelWidth: Dp = 361.dp
     val detailArPanelHeight: Dp = 352.dp
     val detailArCarouselSmallHeight: Dp = 90.dp
     val detailPhotoHeroHeight: Dp = 240.dp

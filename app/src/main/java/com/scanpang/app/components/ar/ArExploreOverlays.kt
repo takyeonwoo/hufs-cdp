@@ -1,5 +1,12 @@
 package com.scanpang.app.components.ar
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,6 +15,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
@@ -32,22 +42,41 @@ import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Coffee
 import androidx.compose.material.icons.rounded.CropFree
+import androidx.compose.material.icons.rounded.CurrencyExchange
+import androidx.compose.material.icons.rounded.DirectionsTransit
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.LocalAtm
+import androidx.compose.material.icons.rounded.LocalHospital
+import androidx.compose.material.icons.rounded.LocalMall
+import androidx.compose.material.icons.rounded.Luggage
+import androidx.compose.material.icons.rounded.Medication
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Restaurant
+import androidx.compose.material.icons.rounded.Store
+import androidx.compose.material.icons.rounded.Wc
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Headset
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -326,6 +355,71 @@ fun ArPoiCard(
 }
 
 private val ArAgentUserBubbleBlue = Color(0xFF1A73E8)
+private val ArSttMicIdleBlue = Color(0xFF1A73E8)
+private val ArSttMicRecordingRed = Color(0xFFE53935)
+
+@Composable
+private fun ArMicSttButton(
+    isListening: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.size(40.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isListening) {
+            val transition = rememberInfiniteTransition(label = "arMicPulse")
+            val pulse by transition.animateFloat(
+                initialValue = 0.88f,
+                targetValue = 1.22f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(650, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "pulse",
+            )
+            Box(
+                modifier = Modifier
+                    .size((36f * pulse).dp)
+                    .clip(CircleShape)
+                    .background(ArSttMicRecordingRed.copy(alpha = 0.35f)),
+            )
+        }
+        Surface(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onClick),
+            shape = CircleShape,
+            color = if (isListening) ArSttMicRecordingRed else ArSttMicIdleBlue,
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = Icons.Rounded.Mic,
+                    contentDescription = "음성 입력",
+                    modifier = Modifier.size(ScanPangDimens.arMicSendIcon),
+                    tint = Color.White,
+                )
+            }
+        }
+    }
+}
+
+private fun Modifier.headsetPulseIfTtsPlaying(enabled: Boolean): Modifier = composed {
+    if (!enabled) return@composed this
+    val transition = rememberInfiniteTransition(label = "arHeadsetTts")
+    val scale by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(480, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "headsetPulse",
+    )
+    this.scale(scale)
+}
 
 data class ArAgentChatMessage(
     val text: String,
@@ -338,6 +432,8 @@ fun ArExploreInteractiveChatSection(
     inputText: String,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
+    isSttListening: Boolean,
+    onMicClick: () -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
@@ -389,11 +485,9 @@ fun ArExploreInteractiveChatSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Mic,
-                contentDescription = null,
-                modifier = Modifier.size(ScanPangDimens.arMicSendIcon),
-                tint = ScanPangColors.OnSurfaceMuted,
+            ArMicSttButton(
+                isListening = isSttListening,
+                onClick = onMicClick,
             )
             TextField(
                 value = inputText,
@@ -817,12 +911,159 @@ fun ArFilterChipRowMulti(
     }
 }
 
+data class ArExploreCategoryChipSpec(
+    val label: String,
+    val icon: ImageVector,
+    val iconTintUnselected: Color,
+)
+
+/**
+ * AR 탐색 필터 패널 — Figma(아이콘+텍스트 칩, 상단 필터/초기화, 하단 필터 적용).
+ */
+fun arExploreCategoryChipSpecs(): List<ArExploreCategoryChipSpec> = listOf(
+    ArExploreCategoryChipSpec("쇼핑", Icons.Rounded.LocalMall, ScanPangColors.CategoryMall),
+    ArExploreCategoryChipSpec("편의점", Icons.Rounded.Store, ScanPangColors.CategoryMall),
+    ArExploreCategoryChipSpec("식당", Icons.Rounded.Restaurant, ScanPangColors.CategoryRestaurant),
+    ArExploreCategoryChipSpec("카페", Icons.Rounded.Coffee, ScanPangColors.CategoryCafe),
+    ArExploreCategoryChipSpec("환전소", Icons.Rounded.CurrencyExchange, ScanPangColors.CategoryExchange),
+    ArExploreCategoryChipSpec("은행", Icons.Rounded.AccountBalance, ScanPangColors.CategoryExchange),
+    ArExploreCategoryChipSpec("ATM", Icons.Rounded.LocalAtm, ScanPangColors.CategoryExchange),
+    ArExploreCategoryChipSpec("병원", Icons.Rounded.LocalHospital, ScanPangColors.CategoryMedical),
+    ArExploreCategoryChipSpec("지하철역", Icons.Rounded.DirectionsTransit, ScanPangColors.Success),
+    ArExploreCategoryChipSpec("화장실", Icons.Rounded.Wc, Color(0xFF0D9488)),
+    ArExploreCategoryChipSpec("물품보관함", Icons.Rounded.Luggage, Color(0xFF0D9488)),
+    ArExploreCategoryChipSpec("약국", Icons.Rounded.Medication, ScanPangColors.CategoryMedical),
+)
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ArExploreFilterPanelFigma(
+    categorySpecs: List<ArExploreCategoryChipSpec>,
+    categorySelection: Set<String>,
+    onCategoryToggle: (String) -> Unit,
+    onReset: () -> Unit,
+    onApply: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "필터",
+                style = ScanPangType.arFilterTitle16,
+                color = ScanPangColors.OnSurfaceStrong,
+            )
+            TextButton(
+                onClick = onReset,
+                contentPadding = PaddingValues(
+                    horizontal = ScanPangSpacing.sm,
+                    vertical = ScanPangSpacing.xs,
+                ),
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = ScanPangColors.Background,
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(ScanPangDimens.icon16),
+                            tint = ScanPangColors.OnSurfacePlaceholder,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(ScanPangSpacing.xs))
+                Text(
+                    text = "초기화",
+                    style = ScanPangType.body14Regular,
+                    color = ScanPangColors.OnSurfaceMuted,
+                )
+            }
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+        ) {
+            categorySpecs.forEach { spec ->
+                val selected = spec.label in categorySelection
+                Surface(
+                    modifier = Modifier
+                        .clip(ScanPangShapes.pill36)
+                        .clickable { onCategoryToggle(spec.label) },
+                    shape = ScanPangShapes.pill36,
+                    color = if (selected) ScanPangColors.Primary else ScanPangColors.Surface,
+                    shadowElevation = if (selected) 0.dp else 2.dp,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(
+                            horizontal = ScanPangSpacing.md,
+                            vertical = ScanPangDimens.chipPadVertical + 2.dp,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.xs),
+                    ) {
+                        Icon(
+                            imageVector = spec.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (selected) Color.White else spec.iconTintUnselected,
+                        )
+                        Text(
+                            text = spec.label,
+                            style = ScanPangType.chip13SemiBold,
+                            color = if (selected) Color.White else ScanPangColors.OnSurfaceStrong,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+        Button(
+            onClick = onApply,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ScanPangDimens.searchBarHeightDefault),
+            shape = ScanPangShapes.radius12,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ScanPangColors.Primary,
+                contentColor = Color.White,
+            ),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                modifier = Modifier.size(ScanPangDimens.icon20),
+            )
+            Spacer(modifier = Modifier.width(ScanPangSpacing.sm))
+            Text(
+                text = "필터 적용",
+                style = ScanPangType.body15Medium,
+            )
+        }
+        Spacer(modifier = Modifier.height(ScanPangDimens.arFilterApplyBottom))
+    }
+}
+
 @Composable
 fun BoxScope.ArExploreSideColumn(
     onTtsClick: () -> Unit,
     onCameraClick: () -> Unit,
     isTtsOn: Boolean,
     isFrozen: Boolean,
+    isTtsPlaying: Boolean = false,
 ) {
     Column(
         modifier = Modifier
@@ -841,6 +1082,7 @@ fun BoxScope.ArExploreSideColumn(
             onClick = onTtsClick,
             surfaceColor = ScanPangColors.ArOverlayWhite85,
             iconTint = if (isTtsOn) ScanPangColors.OnSurfaceStrong else ScanPangColors.ArTtsOffIconTint,
+            modifier = Modifier.headsetPulseIfTtsPlaying(isTtsPlaying && isTtsOn),
         )
         ArExploreRoundSideButton(
             icon = Icons.Rounded.CameraAlt,
@@ -859,9 +1101,10 @@ private fun ArExploreRoundSideButton(
     onClick: () -> Unit,
     surfaceColor: Color,
     iconTint: Color,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .size(ScanPangDimens.arSideFab44)
             .clip(CircleShape)
             .clickable(onClick = onClick),

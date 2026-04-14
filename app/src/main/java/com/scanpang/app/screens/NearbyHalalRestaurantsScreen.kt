@@ -56,7 +56,6 @@ private val filterLabels = listOf(
 
 private data class NearbyHalalPlace(
     val title: String,
-    /** [filterLabels] 중 카테고리 칩과 동일한 문자열 (전체 제외) */
     val categoryFilter: String,
     val badgeKind: SearchResultBadgeKind,
     val badgeLabel: String,

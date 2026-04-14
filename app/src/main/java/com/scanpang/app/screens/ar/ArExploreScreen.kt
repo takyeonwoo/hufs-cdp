@@ -1,5 +1,10 @@
 package com.scanpang.app.screens.ar
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.speech.SpeechRecognizer
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -30,12 +35,9 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -43,22 +45,29 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
-import com.scanpang.app.ar.sendMessageToAgent
+import com.scanpang.app.ar.ArExploreTtsController
+import com.scanpang.app.ar.ArSpeechRecognizerHelper
+import com.scanpang.app.ar.DummyAgentService
+import com.scanpang.app.ar.sendVoiceMessage
 import com.scanpang.app.components.ar.ArAgentChatMessage
 import com.scanpang.app.components.ar.ArCameraBackdrop
 import com.scanpang.app.components.ar.ArCircleIconButton
@@ -66,9 +75,9 @@ import com.scanpang.app.components.ar.ArExploreInteractiveChatSection
 import com.scanpang.app.components.ar.ArFloorStoreGuideOverlay
 import com.scanpang.app.components.ar.ArPoiFloatingDetailOverlay
 import com.scanpang.app.components.ar.ArPoiTabBuilding
+import com.scanpang.app.components.ar.ArExploreFilterPanelFigma
 import com.scanpang.app.components.ar.ArExploreSideColumn
-import com.scanpang.app.components.ar.ArFilterChipRow
-import com.scanpang.app.components.ar.ArFilterChipRowMulti
+import com.scanpang.app.components.ar.arExploreCategoryChipSpecs
 import com.scanpang.app.components.ar.ArPoiPinsLayer
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -92,6 +101,8 @@ fun ArExploreScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val appContext = context.applicationContext
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val chatListState = rememberLazyListState()
@@ -119,22 +130,86 @@ fun ArExploreScreen(
 
     var isFilterOpen by remember { mutableStateOf(false) }
     var categorySelection by remember { mutableStateOf(setOf<String>()) }
-    var sortOption by remember { mutableStateOf("거리순") }
-
     var isSearchOpen by remember { mutableStateOf(false) }
     var showArSearchResults by remember { mutableStateOf(false) }
 
     var isFrozen by remember { mutableStateOf(false) }
     var isTtsOn by remember { mutableStateOf(true) }
 
+    var isSttListening by remember { mutableStateOf(false) }
+    val ttsPlayingState = remember { mutableStateOf(false) }
+    val isTtsPlaying by ttsPlayingState
+    var speechHelperRef by remember { mutableStateOf<ArSpeechRecognizerHelper?>(null) }
+    var pendingMicAfterPermission by remember { mutableStateOf(false) }
+
+    val agentService = remember { DummyAgentService() }
+    val ttsController = remember(appContext) {
+        ArExploreTtsController(appContext) { playing -> ttsPlayingState.value = playing }
+    }
+
+    DisposableEffect(ttsController) {
+        ttsController.start()
+        onDispose { ttsController.shutdown() }
+    }
+
+    LaunchedEffect(isTtsOn) {
+        if (!isTtsOn) ttsController.stop()
+    }
+
+    val onSttResult: (String) -> Unit = { text ->
+        chatInput = text
+        scope.launch {
+            val reply = sendVoiceMessage(text, agentService)
+            chatMessages = chatMessages +
+                ArAgentChatMessage(text = text, isUser = true) +
+                ArAgentChatMessage(text = reply, isUser = false)
+            chatInput = ""
+            ttsController.speakIfEnabled(reply, isTtsOn)
+        }
+    }
+    val latestOnSttResult = rememberUpdatedState(onSttResult)
+
+    val latestSnackbar = rememberUpdatedState(snackbarHostState)
+    val latestScope = rememberUpdatedState(scope)
+
+    DisposableEffect(appContext) {
+        val h = ArSpeechRecognizerHelper(
+            context = appContext,
+            onListeningChange = { isSttListening = it },
+            onResult = { text -> latestOnSttResult.value(text) },
+            onErrorCode = { code ->
+                if (code != SpeechRecognizer.ERROR_NO_MATCH &&
+                    code != SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                ) {
+                    latestScope.value.launch {
+                        latestSnackbar.value.showSnackbar("음성 인식 중 오류가 났어요")
+                    }
+                }
+            },
+        )
+        speechHelperRef = h
+        onDispose {
+            h.destroy()
+            speechHelperRef = null
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted && pendingMicAfterPermission) {
+            speechHelperRef?.startListening()
+        } else if (!granted) {
+            scope.launch { snackbarHostState.showSnackbar("마이크 권한이 필요해요") }
+        }
+        pendingMicAfterPermission = false
+    }
+
     var selectedPoi by remember { mutableStateOf<String?>(null) }
     var activeDetailTab by remember { mutableStateOf(ArPoiTabBuilding) }
     var selectedStore by remember { mutableStateOf<String?>(null) }
 
-    val categories = remember {
-        listOf("카페", "음식점", "쇼핑", "관광", "기도실", "환전")
-    }
-    val sorts = remember { listOf("거리순", "인기순", "할랄 인증") }
+    val categoryChipSpecs = remember { arExploreCategoryChipSpecs() }
     val recentQueries = remember {
         listOf("할랄 식당", "명동성당", "근처 환전소")
     }
@@ -243,6 +318,7 @@ fun ArExploreScreen(
                     onCameraClick = { isFrozen = !isFrozen },
                     isTtsOn = isTtsOn,
                     isFrozen = isFrozen,
+                    isTtsPlaying = isTtsPlaying,
                 )
             }
 
@@ -256,14 +332,47 @@ fun ArExploreScreen(
                     messages = chatMessages,
                     inputText = chatInput,
                     onInputChange = { chatInput = it },
-                    onSend = {
+                    onSend = send@{
                         val q = chatInput.trim()
-                        if (q.isEmpty()) return@ArExploreInteractiveChatSection
-                        val reply = sendMessageToAgent(q)
-                        chatMessages = chatMessages +
-                            ArAgentChatMessage(text = q, isUser = true) +
-                            ArAgentChatMessage(text = reply, isUser = false)
-                        chatInput = ""
+                        if (q.isEmpty()) return@send
+                        scope.launch {
+                            val reply = agentService.sendMessage(q)
+                            chatMessages = chatMessages +
+                                ArAgentChatMessage(text = q, isUser = true) +
+                                ArAgentChatMessage(text = reply, isUser = false)
+                            chatInput = ""
+                            ttsController.speakIfEnabled(reply, isTtsOn)
+                        }
+                    },
+                    isSttListening = isSttListening,
+                    onMicClick = mic@{
+                        val h = speechHelperRef
+                        if (isSttListening) {
+                            h?.stopListening()
+                            return@mic
+                        }
+                        if (h == null) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("음성 입력을 준비하지 못했어요")
+                            }
+                            return@mic
+                        }
+                        if (!h.isRecognitionAvailable()) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("이 기기에서 음성 인식을 쓸 수 없어요")
+                            }
+                            return@mic
+                        }
+                        val hasMic = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.RECORD_AUDIO,
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (hasMic) {
+                            h.startListening()
+                        } else {
+                            pendingMicAfterPermission = true
+                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
                     },
                     listState = chatListState,
                     modifier = Modifier.fillMaxWidth(),
@@ -296,17 +405,11 @@ fun ArExploreScreen(
                             modifier = Modifier
                                 .padding(ScanPangDimens.arTopBarHorizontal)
                                 .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
                         ) {
-                            Text(
-                                text = "카테고리",
-                                style = ScanPangType.arFilterTitle16,
-                                color = ScanPangColors.OnSurfaceStrong,
-                            )
-                            ArFilterChipRowMulti(
-                                labels = categories,
-                                selected = categorySelection,
-                                onToggle = { label ->
+                            ArExploreFilterPanelFigma(
+                                categorySpecs = categoryChipSpecs,
+                                categorySelection = categorySelection,
+                                onCategoryToggle = { label ->
                                     categorySelection =
                                         if (label in categorySelection) {
                                             categorySelection - label
@@ -314,47 +417,9 @@ fun ArExploreScreen(
                                             categorySelection + label
                                         }
                                 },
+                                onReset = { categorySelection = emptySet() },
+                                onApply = { isFilterOpen = false },
                             )
-                            Text(
-                                text = "정렬",
-                                style = ScanPangType.arFilterTitle16,
-                                color = ScanPangColors.OnSurfaceStrong,
-                            )
-                            ArFilterChipRow(
-                                labels = sorts,
-                                selected = sortOption,
-                                onSelect = { sortOption = it },
-                            )
-                            Spacer(modifier = Modifier.height(ScanPangDimens.arFilterSectionTitleTop))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
-                            ) {
-                                OutlinedButton(
-                                    onClick = { categorySelection = emptySet() },
-                                    modifier = Modifier.weight(1f),
-                                ) {
-                                    Text(
-                                        text = "초기화",
-                                        style = ScanPangType.body15Medium,
-                                        color = ScanPangColors.OnSurfaceStrong,
-                                    )
-                                }
-                                Button(
-                                    onClick = { isFilterOpen = false },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(ScanPangDimens.searchBarHeightDefault),
-                                    shape = ScanPangShapes.radius12,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = ScanPangColors.Primary,
-                                        contentColor = Color.White,
-                                    ),
-                                ) {
-                                    Text("필터 적용", style = ScanPangType.body15Medium)
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(ScanPangDimens.arFilterApplyBottom))
                         }
                     }
                 }
@@ -556,6 +621,9 @@ fun ArExploreScreen(
                         activeDetailTab = ArPoiTabBuilding
                     },
                     onFloorStoreClick = { selectedStore = it },
+                    onSave = {
+                        scope.launch { snackbarHostState.showSnackbar("저장되었습니다") }
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
