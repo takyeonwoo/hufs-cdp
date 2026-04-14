@@ -11,6 +11,10 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import com.scanpang.app.screens.HomeScreen
+import com.scanpang.app.screens.SplashScreen
+import com.scanpang.app.screens.onboarding.OnboardingLanguageScreen
+import com.scanpang.app.screens.onboarding.OnboardingNameScreen
+import com.scanpang.app.screens.onboarding.OnboardingPreferenceScreen
 import com.scanpang.app.screens.NearbyHalalRestaurantsScreen
 import com.scanpang.app.screens.NearbyPrayerRoomsScreen
 import com.scanpang.app.screens.PrayerRoomDetailScreen
@@ -24,6 +28,11 @@ import com.scanpang.app.screens.ar.ArExploreScreen
 import com.scanpang.app.screens.ar.ArNavigationMapScreen
 
 object AppRoutes {
+    const val Splash = "splash"
+    const val OnboardingLanguage = "onboarding_language"
+    const val OnboardingName = "onboarding_name"
+    const val OnboardingPreference = "onboarding_preference"
+
     const val Home = "home"
     const val Qibla = "qibla"
     const val Search = "search"
@@ -48,13 +57,25 @@ object AppRoutes {
 fun AppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    startDestination: String = AppRoutes.Home,
+    startDestination: String = AppRoutes.Splash,
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier,
     ) {
+        composable(AppRoutes.Splash) {
+            SplashScreen(navController = navController)
+        }
+        composable(AppRoutes.OnboardingLanguage) {
+            OnboardingLanguageScreen(navController = navController)
+        }
+        composable(AppRoutes.OnboardingName) {
+            OnboardingNameScreen(navController = navController)
+        }
+        composable(AppRoutes.OnboardingPreference) {
+            OnboardingPreferenceScreen(navController = navController)
+        }
         composable(AppRoutes.Home) {
             HomeScreen(navController = navController)
         }
