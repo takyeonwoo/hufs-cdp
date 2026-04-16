@@ -39,6 +39,8 @@ import androidx.navigation.NavController
 import com.scanpang.app.components.SearchResultBadgeKind
 import com.scanpang.app.components.SearchResultPlaceCard
 import com.scanpang.app.components.SearchResultTrustTag
+import com.scanpang.app.data.DummyData
+import com.scanpang.app.data.RestaurantPlace
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -65,6 +67,36 @@ private data class NearbyHalalPlace(
     val trustTags: List<SearchResultTrustTag>,
 )
 
+private fun RestaurantPlace.toNearbyHalalPlace(): NearbyHalalPlace {
+    val place = this.place
+    val badgeKind = when (halalCategory) {
+        "HALAL MEAT" -> SearchResultBadgeKind.HalalMeat
+        "SEAFOOD" -> SearchResultBadgeKind.Seafood
+        "VEGGIE" -> SearchResultBadgeKind.Veggie
+        "SALAM SEOUL" -> SearchResultBadgeKind.SalamSeoul
+        else -> SearchResultBadgeKind.HalalMeat
+    }
+    val trustTags = place.tags.map { tag ->
+        val icon = when {
+            tag.contains("인증") || tag.contains("살람") -> Icons.Rounded.Verified
+            tag.contains("추천") -> Icons.Rounded.Star
+            else -> Icons.Rounded.Verified
+        }
+        SearchResultTrustTag(tag, icon)
+    }
+    val cuisineLabel = place.subCategory.ifBlank { "한식" }
+    return NearbyHalalPlace(
+        title = place.name,
+        categoryFilter = halalCategory,
+        badgeKind = badgeKind,
+        badgeLabel = halalCategory,
+        cuisineLabel = cuisineLabel,
+        distance = place.distance,
+        isOpen = place.isOpen,
+        trustTags = trustTags,
+    )
+}
+
 /**
  * Figma: 주변 할랄 식당 (`290:2034`)
  */
@@ -76,111 +108,7 @@ fun NearbyHalalRestaurantsScreen(
     var filterIndex by remember { mutableIntStateOf(0) }
 
     val allPlaces = remember {
-        listOf(
-            NearbyHalalPlace(
-                title = "할랄가든 명동점",
-                categoryFilter = "HALAL MEAT",
-                badgeKind = SearchResultBadgeKind.HalalMeat,
-                badgeLabel = "HALAL MEAT",
-                cuisineLabel = "한식",
-                distance = "120m",
-                isOpen = true,
-                trustTags = listOf(
-                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
-                    SearchResultTrustTag("방문자 추천", Icons.Rounded.Star),
-                ),
-            ),
-            NearbyHalalPlace(
-                title = "이스탄불 카페",
-                categoryFilter = "HALAL MEAT",
-                badgeKind = SearchResultBadgeKind.HalalMeat,
-                badgeLabel = "HALAL MEAT",
-                cuisineLabel = "터키",
-                distance = "240m",
-                isOpen = true,
-                trustTags = listOf(
-                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
-                ),
-            ),
-            NearbyHalalPlace(
-                title = "레팍라 식당",
-                categoryFilter = "HALAL MEAT",
-                badgeKind = SearchResultBadgeKind.HalalMeat,
-                badgeLabel = "HALAL MEAT",
-                cuisineLabel = "말레이시아",
-                distance = "310m",
-                isOpen = true,
-                trustTags = listOf(
-                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
-                ),
-            ),
-            NearbyHalalPlace(
-                title = "바다향 횟집",
-                categoryFilter = "SEAFOOD",
-                badgeKind = SearchResultBadgeKind.Seafood,
-                badgeLabel = "SEAFOOD",
-                cuisineLabel = "해산물",
-                distance = "350m",
-                isOpen = false,
-                trustTags = emptyList(),
-            ),
-            NearbyHalalPlace(
-                title = "제주 해물탕",
-                categoryFilter = "SEAFOOD",
-                badgeKind = SearchResultBadgeKind.Seafood,
-                badgeLabel = "SEAFOOD",
-                cuisineLabel = "한식 · 해산물",
-                distance = "480m",
-                isOpen = true,
-                trustTags = listOf(
-                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
-                ),
-            ),
-            NearbyHalalPlace(
-                title = "그린샐러드 하우스",
-                categoryFilter = "VEGGIE",
-                badgeKind = SearchResultBadgeKind.Veggie,
-                badgeLabel = "VEGGIE",
-                cuisineLabel = "샐러드 · 비건",
-                distance = "180m",
-                isOpen = true,
-                trustTags = listOf(
-                    SearchResultTrustTag("방문자 추천", Icons.Rounded.Star),
-                ),
-            ),
-            NearbyHalalPlace(
-                title = "포레스트 키친",
-                categoryFilter = "VEGGIE",
-                badgeKind = SearchResultBadgeKind.Veggie,
-                badgeLabel = "VEGGIE",
-                cuisineLabel = "채식 뷔페",
-                distance = "420m",
-                isOpen = true,
-                trustTags = emptyList(),
-            ),
-            NearbyHalalPlace(
-                title = "살람서울 명동",
-                categoryFilter = "SALAM SEOUL",
-                badgeKind = SearchResultBadgeKind.SalamSeoul,
-                badgeLabel = "SALAM SEOUL",
-                cuisineLabel = "퓨전",
-                distance = "95m",
-                isOpen = true,
-                trustTags = listOf(
-                    SearchResultTrustTag("할랄 인증", Icons.Rounded.Verified),
-                ),
-            ),
-            NearbyHalalPlace(
-                title = "살람서울 카페",
-                categoryFilter = "SALAM SEOUL",
-                badgeKind = SearchResultBadgeKind.SalamSeoul,
-                badgeLabel = "SALAM SEOUL",
-                cuisineLabel = "디저트",
-                distance = "260m",
-                isOpen = false,
-                trustTags = emptyList(),
-            ),
-        )
+        DummyData.halalRestaurants.map { it.toNearbyHalalPlace() }
     }
 
     val visiblePlaces = remember(filterIndex, allPlaces) {
@@ -288,7 +216,7 @@ fun NearbyHalalRestaurantsScreen(
             }
             items(
                 items = visiblePlaces,
-                key = { it.title + it.distance },
+                key = { it.title + it.distance + it.badgeLabel },
             ) { place ->
                 SearchResultPlaceCard(
                     title = place.title,

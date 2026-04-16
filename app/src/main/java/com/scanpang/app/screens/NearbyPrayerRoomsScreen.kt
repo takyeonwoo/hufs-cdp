@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -42,12 +43,30 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
+import com.scanpang.app.data.DummyData
+import com.scanpang.app.data.Place
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
+
+private fun parseDistanceMetersForSort(line: String): Int {
+    Regex("""(\d+(?:\.\d+)?)\s*km""").find(line)?.groupValues?.get(1)?.toDoubleOrNull()
+        ?.let { return (it * 1000).toInt() }
+    Regex("""(\d+)\s*m""").find(line)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
+    return Int.MAX_VALUE / 4
+}
+
+private fun prayerRoomsForFilter(filterIndex: Int): List<Place> {
+    val all = DummyData.prayerRooms
+    return when (filterIndex) {
+        1 -> all.sortedBy { parseDistanceMetersForSort(it.distance) }
+        2 -> all.filter { room -> room.tags.any { it.contains("남녀") } }
+        else -> all
+    }
+}
 
 /**
  * Figma: 주변 기도실 (`197:2256`)
@@ -59,6 +78,7 @@ fun NearbyPrayerRoomsScreen(
 ) {
     var filterIndex by remember { mutableIntStateOf(0) }
     val filterLabels = listOf("전체", "거리순", "남녀 분리")
+    val prayerPlaces = remember(filterIndex) { prayerRoomsForFilter(filterIndex) }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = ScanPangColors.Surface,
@@ -197,19 +217,13 @@ fun NearbyPrayerRoomsScreen(
                     }
                 }
             }
-            item {
+            items(
+                items = prayerPlaces,
+                key = { it.id },
+            ) { place ->
                 PrayerRoomRowCard(
-                    title = "명동 공중기도실",
-                    subtitle = "도보 3분 · 지하 1층",
-                    onClick = {
-                        navController.navigate(AppRoutes.PrayerRoomDetail) { launchSingleTop = true }
-                    },
-                )
-            }
-            item {
-                PrayerRoomRowCard(
-                    title = "회현역 무슬림 기도실",
-                    subtitle = "도보 8분 · 환승 통로",
+                    title = place.name,
+                    subtitle = "${place.distance} · ${place.address}",
                     onClick = {
                         navController.navigate(AppRoutes.PrayerRoomDetail) { launchSingleTop = true }
                     },
