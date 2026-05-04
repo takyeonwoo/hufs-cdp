@@ -344,6 +344,8 @@ fun ArExploreScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    // ScanPangTabBar가 NavHost 위에 오버레이되므로, 홈과 동일하게 탭 영역만큼 비움
+                    .padding(bottom = ScanPangDimens.mainTabContentBottomInset)
                     .navigationBarsPadding(),
             ) {
                 ArExploreInteractiveChatSection(

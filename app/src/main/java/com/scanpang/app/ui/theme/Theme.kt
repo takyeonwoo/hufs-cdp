@@ -97,6 +97,24 @@ object ScanPangColors {
     val ArSearchPanelStroke = Color(0xFFF3F4F6)
     /** AR 하단 채팅 영역 은은한 스크림 */
     val ArBottomChatScrim = Color(0x26FFFFFF)
+    /** AR 길안내 바텀시트 표면 — glass 톤(탐색 채팅 스크림과 동일, 하드코딩 중복 없음) */
+    val ArNavBottomSheetSurface get() = ArBottomChatScrim
+    /** AR 길안내: 메인 탭바 위 하단 스트립 — 시트와 이어지는 glass 톤 */
+    val ArNavBottomPillBackground get() = ArBottomChatScrim
+    /** AR 길안내 하단 glass 세로 그라데이션 — 상단 투명 */
+    val ArNavBottomGlassGradientTop = Color(0x00FFFFFF)
+    /** AR 길안내 glass 중간 스톱 (~10% 화이트) */
+    val ArNavBottomGlassGradientMiddle = Color(0x1AFFFFFF)
+    /** AR 길안내 glass 하단 스톱 (~20% 화이트, 카메라 가림 방지) */
+    val ArNavBottomGlassGradientBottom = Color(0x33FFFFFF)
+    /** AI 가이드 채팅 단색 스크림 참조(필요 시 단일 톤) */
+    val ArNavAiGuideChatScrim get() = ArNavBottomGlassGradientMiddle
+    /** AI 가이드 glass 하단 강조면 */
+    val ArNavBottomGlassSurface get() = ArNavBottomGlassGradientBottom
+    /** 메인 탭바 위 스트립 그라데이션 상단(시트 하단과 이어짐) */
+    val ArNavBottomPillGradientTop get() = ArNavBottomGlassGradientMiddle
+    /** 메인 탭바 위 스트립 그라데이션 하단 */
+    val ArNavBottomPillGradientBottom get() = ArNavBottomGlassGradientBottom
     /** AR 길안내 중앙 턴 배지 (Primary 90%) */
     val ArNavPrimaryBadge90 = Color(0xE61A73E8)
     /** AR 도착 배지 (StatusOpen 90%, Figma #10B981) */
@@ -155,9 +173,19 @@ object ScanPangDimens {
     val bottomBarContainerHeight: Dp = 95.dp
     val bottomPillHeight: Dp = 62.dp
     /** FAB·라벨 묶음을 위로 띄우는 오프셋 */
-    val tabBarFabCenterOffsetUp: Dp = 28.dp
+    val tabBarFabCenterOffsetUp: Dp = 16.dp
     /** 메인 탭(ScanPangTabBar) 위 콘텐츠 하단 여백 */
     val mainTabContentBottomInset: Dp = bottomBarContainerHeight + tabBarFabCenterOffsetUp
+    /** AR 길안내: 바텀시트 아래~메인 탭바 직전 glass 스트립 높이(탭 inset과 동일) */
+    val arNavBottomPillZoneHeight: Dp get() = mainTabContentBottomInset
+    /** 지도/AI 탭 행 아래 ↔ 채팅 콘텐츠 사이 간격(계층 분리) */
+    val arNavAiGuideTabToChatGap: Dp = 10.dp
+    /** AI 가이드 말풍선+입력 블록 전체를 아래로 내리는 오프셋(16~24dp 권장) */
+    val arNavAiGuideChatOffsetY: Dp = 18.dp
+    /** AI 가이드 영역 하단 패딩(시트 내부, 메인 탭과 과밀착 방지) */
+    val arNavAiGuideChatBottomPadding: Dp = 12.dp
+    /** 말풍선 묶음과 입력 pill 사이 세로 간격 */
+    val arNavAiGuideInputBottomGap: Dp = 10.dp
     /** AR 탐색 화면 상단 그라데이션 오버레이 높이 */
     val arExploreGradientOverlayHeight: Dp = 200.dp
     /** POI 바텀시트 최대 높이 */
@@ -240,7 +268,10 @@ object ScanPangDimens {
     val arChatAreaMaxHeight: Dp = 250.dp
     val arChatAreaBottomPad: Dp = 20.dp
     val arChatBubbleGap: Dp = 10.dp
-    val arInputBarMinHeight: Dp = 60.dp
+    /** AR 탐색 하단 입력 pill — [arInputBarMinHeight]보다 낮게(말풍선 입력줄 전용) */
+    val arExploreChatInputBarMinHeight: Dp = 35.dp
+    val arExploreChatInputInnerPadV: Dp = 2.dp
+    val arInputBarMinHeight: Dp = 48.dp
     val arInputBarRadius: Dp = 30.dp
     val arInputInnerPadH: Dp = 10.dp
     val arInputInnerPadV: Dp = 8.dp
@@ -285,6 +316,12 @@ object ScanPangDimens {
     val arNavPoiOneTop: Dp = 410.dp
     val arNavPoiTwoStart: Dp = 310.dp
     val arNavPoiTwoTop: Dp = 455.dp
+    /** AR 길안내 바텀시트 완전 축소 앵커 높이 */
+    val arNavBottomSheetCollapsedHeight: Dp = 148.dp
+    /** AR 길안내 바텀시트 기본(resting) 높이 — 드래그 후 가장 자주 유지하고 싶은 값 */
+    val arNavBottomSheetDefaultHeight: Dp = 228.dp
+    /** AR 길안내 바텀시트 최대 확장 목표 높이(실제 높이는 화면의 50% 이하로 클램프) */
+    val arNavBottomSheetExpandedHeight: Dp = 320.dp
     val arNavBottomSheetDragH: Dp = 20.dp
     val arNavDragBarWidth: Dp = 36.dp
     val arNavDragBarHeight: Dp = 4.dp
@@ -358,6 +395,8 @@ object ScanPangShapes {
         bottomEnd = 20.dp,
     )
     val arNavBottomSheetTop = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    /** AI 가이드 glass 배경 상단만 둥글게(하단은 시트 직사각형과 맞닿음) */
+    val arNavAiGuideGlassTop = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
     val arNavNextStepChip = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
     val arNavDragBar = RoundedCornerShape(2.dp)
     val detailArStoreCard = RoundedCornerShape(20.dp)
