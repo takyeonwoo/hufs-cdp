@@ -110,8 +110,9 @@ fun OnboardingPreferenceScreen(
                 onClick = {
                     selected?.let { prefs.setTravelPreference(it) }
                     prefs.setOnboardingComplete(true)
+                    // 신규 가입 흐름이 시작된 약관 화면 이전(Login·Splash)까지 통째로 정리.
                     navController.navigate(AppRoutes.Home) {
-                        popUpTo(AppRoutes.OnboardingLanguage) { inclusive = true }
+                        popUpTo(AppRoutes.TermsAgreement) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
