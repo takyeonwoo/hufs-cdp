@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -26,23 +25,11 @@ import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
-data class SavedPlaceTag(
-    val label: String,
-    val style: SavedPlaceTagStyle,
-)
-
-enum class SavedPlaceTagStyle {
-    Success,
-    Warning,
-    Neutral,
-}
-
 @Composable
 fun SavedPlaceCard(
     title: String,
     categoryLabel: String,
     distanceLine: String,
-    tags: List<SavedPlaceTag>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -90,27 +77,6 @@ fun SavedPlaceCard(
                     color = ScanPangColors.OnSurfaceMuted,
                 )
             }
-            if (tags.isNotEmpty()) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(ScanPangDimens.stackGap6),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    tags.forEach { tag ->
-                        val (tc, bg) = tagColors(tag.style)
-                        Box(
-                            modifier = Modifier
-                                .clip(ScanPangShapes.tag4)
-                                .background(bg)
-                                .padding(
-                                    horizontal = ScanPangDimens.chipPadHorizontal,
-                                    vertical = ScanPangDimens.chipPadVertical,
-                                ),
-                        ) {
-                            Text(text = tag.label, style = ScanPangType.tag10Medium, color = tc)
-                        }
-                    }
-                }
-            }
         }
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
@@ -118,14 +84,5 @@ fun SavedPlaceCard(
             modifier = Modifier.size(ScanPangDimens.tabIcon),
             tint = ScanPangColors.Primary,
         )
-    }
-}
-
-private fun tagColors(style: SavedPlaceTagStyle): Pair<Color, Color> {
-    val bg = ScanPangColors.Background
-    return when (style) {
-        SavedPlaceTagStyle.Success -> ScanPangColors.Success to bg
-        SavedPlaceTagStyle.Warning -> ScanPangColors.AccentAmber to bg
-        SavedPlaceTagStyle.Neutral -> ScanPangColors.OnSurfaceMuted to bg
     }
 }

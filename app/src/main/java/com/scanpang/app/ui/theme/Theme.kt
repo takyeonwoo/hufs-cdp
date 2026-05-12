@@ -162,11 +162,15 @@ object ScanPangColors {
     val KakaoYellowPressed = Color(0xFFE5CE00)
     /** Kakao 버튼 라벨 색 — 검정 85% */
     val KakaoLabel = Color(0xD9000000)
-    /** Google 버튼 1dp 보더 (가이드라인 색) */
+    /** Google 버튼 1dp 보더 (가이드라인 색) — 현재 디자인은 보더 없는 neutral 버튼이라 미사용 */
     val GoogleBorder = Color(0xFFDADCE0)
+    /** Google 버튼 배경 — neutral gray ("Sign in with Google" neutral 테마 #F2F2F2) */
+    val GoogleSurface = Color(0xFFF2F2F2)
+    /** Google 버튼 pressed 상태 — 약간 더 어두운 회색 */
+    val GoogleSurfacePressed = Color(0xFFE5E5E5)
     /** Google 버튼 라벨 색 */
     val GoogleLabel = Color(0xFF1F1F1F)
-    /** Google 'G' 로고 placeholder 컬러 */
+    /** Google 'G' 로고 placeholder 컬러 — 현재는 ic_google_g 드로어블 사용으로 미사용 */
     val GoogleBlue = Color(0xFF4285F4)
     /** Login 그라디언트 시작 (top, 흰색) */
     val LoginGradientStart = Color(0xFFFFFFFF)

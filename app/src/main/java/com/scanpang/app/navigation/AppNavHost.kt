@@ -1,15 +1,15 @@
 package com.scanpang.app.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import java.net.URLDecoder
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import com.scanpang.app.screens.HomeScreen
 import com.scanpang.app.screens.SplashScreen
 import com.scanpang.app.screens.auth.LoginErrorScreen
@@ -33,6 +33,7 @@ import com.scanpang.app.screens.PharmacyDetailScreen
 import com.scanpang.app.screens.PrayerRoomDetailScreen
 import com.scanpang.app.screens.ProfileScreen
 import com.scanpang.app.screens.QiblaDirectionScreen
+import com.scanpang.app.screens.RecentlyViewedListScreen
 import com.scanpang.app.screens.RestaurantDetailScreen
 import com.scanpang.app.screens.RestroomDetailScreen
 import com.scanpang.app.screens.SavedPlacesScreen
@@ -40,9 +41,11 @@ import com.scanpang.app.screens.ShoppingDetailScreen
 import com.scanpang.app.screens.SubwayDetailScreen
 import com.scanpang.app.screens.TouristSpotDetailScreen
 import com.scanpang.app.screens.SearchDefaultScreen
-import com.scanpang.app.screens.SearchResultsScreen
 import com.scanpang.app.screens.ar.ArExploreScreen
 import com.scanpang.app.screens.ar.ArNavigationMapScreen
+import com.scanpang.app.screens.settings.LanguageSettingsScreen
+import com.scanpang.app.screens.settings.NotificationSettingsScreen
+import com.scanpang.app.screens.settings.ValueAddedSettingsScreen
 
 object AppRoutes {
     const val Splash = "splash"
@@ -53,18 +56,17 @@ object AppRoutes {
     const val Home = "home"
     const val Qibla = "qibla"
     const val Search = "search"
-    const val SearchResults = "search_results"
 
-    /** 검색 결과에서 검색 탭 입력을 비울 때 [androidx.navigation.NavBackStackEntry.savedStateHandle] 키 */
-    const val SearchSavedStateClearQueryKey = "clear_search_query"
-
-    fun searchResultsRoute(query: String): String {
-        val encoded = URLEncoder.encode(query, StandardCharsets.UTF_8.name())
-        return "$SearchResults/$encoded"
-    }
+    /**
+     * Home 의 quick action 등에서 검색 탭을 띄우면서 입력칸에 미리 채워넣을 검색어를 전달할 때 쓰는
+     * [androidx.navigation.NavBackStackEntry.savedStateHandle] 키.
+     * 값이 비어있지 않으면 SearchDefaultScreen 진입 시 한 번 query 로 반영되고 null 로 리셋된다.
+     */
+    const val SearchSavedStatePendingQueryKey = "pending_search_query"
 
     const val Saved = "saved"
     const val Profile = "profile"
+    const val RecentlyViewed = "recently_viewed"
     const val NearbyHalal = "nearby_halal"
     const val NearbyPrayer = "nearby_prayer"
     const val RestaurantDetail = "restaurant_detail"
@@ -83,6 +85,11 @@ object AppRoutes {
     const val PharmacyDetail = "pharmacy_detail"
     const val ArExplore = "ar_explore"
     const val ArNavMap = "ar_nav_map"
+
+    // 내 정보 → 상세 설정 페이지들
+    const val SettingsLanguage = "settings_language"
+    const val SettingsValueAdded = "settings_value_added"
+    const val SettingsNotification = "settings_notification"
 
     const val Login = "login"
     const val TermsAgreement = "terms_agreement"
@@ -125,32 +132,25 @@ fun AppNavHost(
         composable(AppRoutes.Qibla) {
             QiblaDirectionScreen(navController = navController)
         }
-        composable(AppRoutes.Search) {
-            SearchDefaultScreen(navController = navController)
-        }
+        // 검색 탭 — 검색 결과는 이 화면 안에서 query 상태에 따라 조건부로 렌더된다(별도 라우트 없음).
+        // 다른 화면에서 사전입력 query 를 주고 싶으면 [navigateToSearchWithQuery] 헬퍼를 쓴다.
         composable(
-            route = "${AppRoutes.SearchResults}/{query}",
-            arguments = listOf(
-                navArgument("query") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                },
-            ),
-        ) { entry ->
-            val raw = entry.arguments?.getString("query").orEmpty()
-            val query = runCatching {
-                URLDecoder.decode(raw, StandardCharsets.UTF_8.name())
-            }.getOrDefault(raw)
-            SearchResultsScreen(
-                navController = navController,
-                searchQuery = query,
-            )
+            route = AppRoutes.Search,
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
+        ) {
+            SearchDefaultScreen(navController = navController)
         }
         composable(AppRoutes.Saved) {
             SavedPlacesScreen(navController = navController)
         }
         composable(AppRoutes.Profile) {
             ProfileScreen(navController = navController)
+        }
+        composable(AppRoutes.RecentlyViewed) {
+            RecentlyViewedListScreen(navController = navController)
         }
         composable(AppRoutes.NearbyHalal) {
             NearbyHalalRestaurantsScreen(navController = navController)
@@ -205,6 +205,15 @@ fun AppNavHost(
         }
         composable(AppRoutes.ArNavMap) {
             ArNavigationMapScreen(navController = navController)
+        }
+        composable(AppRoutes.SettingsLanguage) {
+            LanguageSettingsScreen(navController = navController)
+        }
+        composable(AppRoutes.SettingsValueAdded) {
+            ValueAddedSettingsScreen(navController = navController)
+        }
+        composable(AppRoutes.SettingsNotification) {
+            NotificationSettingsScreen(navController = navController)
         }
         composable(AppRoutes.Login) {
             val context = androidx.compose.ui.platform.LocalContext.current
@@ -303,4 +312,27 @@ fun AppNavHost(
 private object AuthProviderArg {
     const val Kakao = "kakao"
     const val Google = "google"
+}
+
+/**
+ * 검색 탭으로 이동하면서 입력칸에 [prefillQuery] 를 미리 채워둔다.
+ * (예: 홈의 quick action 카드 → "비건 식당" 검색)
+ *
+ * 바텀 탭과 동일한 navigation 옵션(saveState/restoreState) 을 적용해 탭 전환 UX 가 깨지지 않게 한다.
+ * 사전입력 값은 [AppRoutes.SearchSavedStatePendingQueryKey] 로 Search 라우트의 savedStateHandle 에
+ * 전달되며, SearchDefaultScreen 의 LaunchedEffect 가 받아서 query 상태로 흘려준다.
+ */
+fun NavController.navigateToSearchWithQuery(prefillQuery: String) {
+    navigate(AppRoutes.Search) {
+        popUpTo(AppRoutes.Home) {
+            saveState = true
+            inclusive = false
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+    runCatching {
+        getBackStackEntry(AppRoutes.Search).savedStateHandle[AppRoutes.SearchSavedStatePendingQueryKey] =
+            prefillQuery
+    }
 }

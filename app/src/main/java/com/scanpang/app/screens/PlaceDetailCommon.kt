@@ -45,6 +45,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +66,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.scanpang.app.data.Place
+import com.scanpang.app.data.RecentlyViewedEntry
+import com.scanpang.app.data.RecentlyViewedStore
 import com.scanpang.app.data.SavedPlaceEntry
 import com.scanpang.app.data.SavedPlaceNavTarget
 import com.scanpang.app.data.SavedPlacesStore
@@ -124,7 +127,22 @@ fun rememberDetailBookmark(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val store = remember { SavedPlacesStore(context) }
+    val recentlyViewedStore = remember { RecentlyViewedStore(context) }
     var bookmarked by remember(placeId) { mutableStateOf(store.isSaved(placeId)) }
+
+    // 모든 상세 화면이 이 훅을 통해 진입하므로, 여기서 한 번만 방문 기록을 남기면
+    // Home 의 "최근 본 장소" 가 검색이 아닌 실제 상세 진입에만 반응한다.
+    LaunchedEffect(placeId) {
+        recentlyViewedStore.record(
+            RecentlyViewedEntry(
+                id = placeId,
+                name = placeName,
+                category = category,
+                distanceLine = distanceLine,
+                target = target,
+            ),
+        )
+    }
 
     DisposableEffect(lifecycleOwner, placeId) {
         val observer = LifecycleEventObserver { _, event ->

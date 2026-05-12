@@ -4,18 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +33,7 @@ import com.scanpang.app.ui.theme.ScanPangType
  *
  * - bg: [ScanPangColors.KakaoYellow], pressed 시 [ScanPangColors.KakaoYellowPressed]
  * - height 56dp, fillMaxWidth, RoundedCornerShape(12dp)
+ * - 좌측에 말풍선 아이콘(24dp, 24dp inset), 라벨은 버튼 중앙
  * - [isLoading] 시 라벨/아이콘 hide + 가운데 CircularProgressIndicator(20dp)
  * - [enabled] false 시 alpha 0.5 + 클릭 비활성
  */
@@ -76,26 +75,24 @@ fun KakaoLoginButton(
                 strokeWidth = 2.dp,
             )
         } else {
-            Row(
+            // 라벨은 버튼 정중앙, 아이콘은 좌측 inset 24dp 에 고정.
+            // Figma 의 "카카오로 시작하기" 시각 균형을 위해 Row 정렬이 아닌
+            // Box align 으로 분리한다.
+            Icon(
+                imageVector = Icons.Filled.Chat,
+                contentDescription = null,
+                tint = ScanPangColors.KakaoLabel,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(ScanPangColors.KakaoLabel),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "카카오로 시작하기",
-                    style = ScanPangType.title16SemiBold,
-                    color = ScanPangColors.KakaoLabel,
-                )
-            }
+                    .align(Alignment.CenterStart)
+                    .padding(start = 24.dp)
+                    .size(20.dp),
+            )
+            Text(
+                text = "카카오로 시작하기",
+                style = ScanPangType.title16SemiBold,
+                color = ScanPangColors.KakaoLabel,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
     }
 }

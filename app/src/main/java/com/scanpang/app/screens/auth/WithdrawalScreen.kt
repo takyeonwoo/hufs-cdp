@@ -171,11 +171,11 @@ private fun InfoCard() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(ScanPangColors.DangerStrong),
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = ScanPangColors.DangerStrong,
+                    modifier = Modifier.size(16.dp),
                 )
                 Text(
                     text = item,

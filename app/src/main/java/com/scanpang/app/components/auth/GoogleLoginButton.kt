@@ -1,20 +1,15 @@
 package com.scanpang.app.components.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -25,9 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.scanpang.app.R
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangTheme
 import com.scanpang.app.ui.theme.ScanPangType
@@ -35,8 +31,9 @@ import com.scanpang.app.ui.theme.ScanPangType
 /**
  * 구글 로그인 버튼. 동작·시그니처는 [KakaoLoginButton] 과 동일하게 맞춘다.
  *
- * - bg: [ScanPangColors.Surface], 1dp [ScanPangColors.GoogleBorder] 보더
- * - pressed 시 8% 어두운 오버레이 (회색 0x14)
+ * - bg: [ScanPangColors.GoogleSurface] (neutral gray), pressed 시 [ScanPangColors.GoogleSurfacePressed]
+ * - 보더 없음 (Figma neutral 스타일)
+ * - 좌측에 공식 Google "G" 4-color 로고 (18dp, 24dp inset), 라벨은 버튼 중앙
  */
 @Composable
 fun GoogleLoginButton(
@@ -47,7 +44,11 @@ fun GoogleLoginButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val pressedOverlay = if (isPressed && enabled && !isLoading) Color(0x14000000) else Color.Transparent
+    val bg = if (isPressed && enabled && !isLoading) {
+        ScanPangColors.GoogleSurfacePressed
+    } else {
+        ScanPangColors.GoogleSurface
+    }
     val canClick = enabled && !isLoading
 
     Box(
@@ -56,9 +57,7 @@ fun GoogleLoginButton(
             .height(56.dp)
             .alpha(if (enabled) 1f else 0.5f)
             .clip(RoundedCornerShape(12.dp))
-            .background(ScanPangColors.Surface)
-            .border(1.dp, ScanPangColors.GoogleBorder, RoundedCornerShape(12.dp))
-            .background(pressedOverlay)
+            .background(bg)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -70,37 +69,25 @@ fun GoogleLoginButton(
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
-                color = ScanPangColors.GoogleBlue,
+                color = ScanPangColors.GoogleLabel,
                 strokeWidth = 2.dp,
             )
         } else {
-            Row(
+            // 카카오 버튼과 동일한 레이아웃 구성: 아이콘은 좌측 inset 24dp 고정, 라벨은 정중앙.
+            Image(
+                painter = painterResource(id = R.drawable.ic_google_g),
+                contentDescription = null,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(ScanPangColors.Surface),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "G",
-                        style = ScanPangType.title16SemiBold,
-                        color = ScanPangColors.GoogleBlue,
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Google로 시작하기",
-                    style = ScanPangType.title16SemiBold,
-                    color = ScanPangColors.GoogleLabel,
-                )
-            }
+                    .align(Alignment.CenterStart)
+                    .padding(start = 24.dp)
+                    .size(18.dp),
+            )
+            Text(
+                text = "Google로 시작하기",
+                style = ScanPangType.title16SemiBold,
+                color = ScanPangColors.GoogleLabel,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
     }
 }

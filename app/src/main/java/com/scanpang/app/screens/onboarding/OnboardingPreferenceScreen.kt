@@ -21,13 +21,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.scanpang.app.data.OnboardingPreferences
+import com.scanpang.app.data.ValueAdded
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
 private data class PreferenceOption(
-    val code: String,
+    val value: ValueAdded,
     val emoji: String,
     val title: String,
     val subtitle: String?,
@@ -43,19 +44,19 @@ fun OnboardingPreferenceScreen(
     val options = remember {
         listOf(
             PreferenceOption(
-                code = OnboardingPreferences.TRAVEL_PREF_HALAL,
+                value = ValueAdded.HALAL,
                 emoji = "🕌",
                 title = "할랄",
                 subtitle = "할랄 식당, 기도실, 키블라 방향 등",
             ),
             PreferenceOption(
-                code = OnboardingPreferences.TRAVEL_PREF_VEGAN,
+                value = ValueAdded.VEGAN,
                 emoji = "🌱",
                 title = "비건",
                 subtitle = "비건 식당, 채식 메뉴 등",
             ),
             PreferenceOption(
-                code = OnboardingPreferences.TRAVEL_PREF_NONE,
+                value = ValueAdded.GENERAL,
                 emoji = "✨",
                 title = "괜찮아요",
                 subtitle = null,
@@ -63,7 +64,7 @@ fun OnboardingPreferenceScreen(
         )
     }
     var selected by remember {
-        mutableStateOf<String?>(prefs.getTravelPreference())
+        mutableStateOf<ValueAdded?>(prefs.getValueAdded())
     }
 
     Scaffold(
@@ -100,8 +101,8 @@ fun OnboardingPreferenceScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
                     options.forEach { opt ->
                         OnboardingSelectableCard(
-                            selected = selected == opt.code,
-                            onClick = { selected = opt.code },
+                            selected = selected == opt.value,
+                            onClick = { selected = opt.value },
                         ) {
                             OnboardingChoiceContent(
                                 leading = opt.emoji,
@@ -117,7 +118,7 @@ fun OnboardingPreferenceScreen(
                 text = "시작하기",
                 enabled = selected != null,
                 onClick = {
-                    selected?.let { prefs.setTravelPreference(it) }
+                    selected?.let { prefs.setValueAdded(it) }
                     prefs.setOnboardingComplete(true)
                     // 신규 가입 흐름이 시작된 약관 화면 이전(Login·Splash)까지 통째로 정리.
                     navController.navigate(AppRoutes.Home) {
