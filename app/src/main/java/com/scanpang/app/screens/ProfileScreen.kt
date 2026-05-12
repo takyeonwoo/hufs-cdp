@@ -140,8 +140,10 @@ fun ProfileScreen(
                         when (onboardingPrefs.getTravelPreference()) {
                             OnboardingPreferences.TRAVEL_PREF_HALAL ->
                                 ProfilePreferenceTag("할랄 우선")
-                            OnboardingPreferences.TRAVEL_PREF_GENERAL ->
-                                ProfilePreferenceTag("일반 여행")
+                            OnboardingPreferences.TRAVEL_PREF_VEGAN ->
+                                ProfilePreferenceTag("비건 우선")
+                            OnboardingPreferences.TRAVEL_PREF_NONE ->
+                                ProfilePreferenceTag("자유 여행")
                             else -> ProfilePreferenceTag("여행 맞춤")
                         }
                         ProfilePreferenceTag("AR 탐색 모드")
