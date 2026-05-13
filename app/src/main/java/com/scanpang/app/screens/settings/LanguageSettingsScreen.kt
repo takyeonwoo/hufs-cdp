@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Icon
@@ -23,8 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.scanpang.app.data.OnboardingPreferences
 import com.scanpang.app.screens.onboarding.OnboardingChoiceContent
@@ -62,27 +65,31 @@ fun LanguageSettingsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = Color.White,
+        containerColor = ScanPangColors.Surface,
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
     ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .statusBarsPadding()
-                .padding(horizontal = ScanPangDimens.screenHorizontal),
+                .background(ScanPangColors.Surface)
+                .statusBarsPadding(),
         ) {
             SettingsTitleBar(
                 title = "언어 설정",
                 onBack = { navController.popBackStack() },
             )
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = ScanPangDimens.screenHorizontal)
+                    .padding(top = 16.dp),
+            ) {
             Text(
                 text = "앱에서 사용할 언어를 선택하세요. 선택한 언어로 음성 안내와 텍스트가 제공됩니다.",
-                style = ScanPangType.body14Regular,
+                style = ScanPangType.meta13.copy(lineHeight = 19.5.sp),
                 color = ScanPangColors.OnSurfaceMuted,
             )
             Spacer(modifier = Modifier.height(ScanPangSpacing.lg))
-            Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 options.forEach { opt ->
                     OnboardingSelectableCard(
                         selected = selectedCode == opt.code,
@@ -90,14 +97,21 @@ fun LanguageSettingsScreen(
                             selectedCode = opt.code
                             prefs.setLanguageCode(opt.code)
                         },
+                        shape = RoundedCornerShape(14.dp),
+                        horizontalPadding = 20.dp,
+                        verticalPadding = 20.dp,
+                        horizontalGap = 16.dp,
                     ) {
                         OnboardingChoiceContent(
                             leading = opt.flag,
                             title = opt.label,
                             subtitle = opt.subLabel,
+                            leadingTextStyle = ScanPangType.headlineMedium.copy(fontWeight = FontWeight.Normal),
+                            subtitleTextStyle = ScanPangType.meta13,
                         )
                     }
                 }
+            }
             }
         }
     }
@@ -112,8 +126,10 @@ internal fun SettingsTitleBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = ScanPangSpacing.sm),
+            .height(56.dp)
+            .padding(start = 4.dp, end = ScanPangDimens.screenHorizontal),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         IconButton(onClick = onBack) {
             Icon(
@@ -124,9 +140,8 @@ internal fun SettingsTitleBar(
         }
         Text(
             text = title,
-            style = ScanPangType.detailScreenTitle22,
+            style = ScanPangType.profileName18,
             color = ScanPangColors.OnSurfaceStrong,
-            modifier = Modifier.weight(1f),
         )
     }
 }

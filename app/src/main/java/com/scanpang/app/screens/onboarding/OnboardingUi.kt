@@ -23,12 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
-private val OnboardingCardRadius = RoundedCornerShape(12.dp)
+private val OnboardingCardRadiusDefault = RoundedCornerShape(12.dp)
 private val OnboardingBlue = ScanPangColors.Primary
 private val OnboardingCardBorderGray = ScanPangColors.OutlineSubtle
 
@@ -105,6 +107,10 @@ fun OnboardingSelectableCard(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = OnboardingCardRadiusDefault,
+    horizontalPadding: Dp = ScanPangSpacing.lg,
+    verticalPadding: Dp = ScanPangSpacing.md,
+    horizontalGap: Dp = ScanPangSpacing.md,
     content: @Composable RowScope.() -> Unit,
 ) {
     val borderColor = if (selected) OnboardingBlue else OnboardingCardBorderGray
@@ -112,13 +118,13 @@ fun OnboardingSelectableCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(OnboardingCardRadius)
-            .border(borderWidth, borderColor, OnboardingCardRadius)
+            .clip(shape)
+            .border(borderWidth, borderColor, shape)
             .background(Color.White)
             .clickable(onClick = onClick)
-            .padding(horizontal = ScanPangSpacing.lg, vertical = ScanPangSpacing.md),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(horizontalGap),
     ) {
         content()
         OnboardingSelectionRadio(selected = selected)
@@ -155,10 +161,13 @@ fun RowScope.OnboardingChoiceContent(
     title: String,
     subtitle: String? = null,
     modifier: Modifier = Modifier,
+    leadingTextStyle: TextStyle = ScanPangType.titleLarge,
+    subtitleTextStyle: TextStyle = ScanPangType.caption12Medium,
+    titleSubtitleSpacing: Dp = 2.dp,
 ) {
     Text(
         text = leading,
-        style = ScanPangType.titleLarge,
+        style = leadingTextStyle,
     )
     Column(modifier = modifier.weight(1f)) {
         Text(
@@ -167,10 +176,10 @@ fun RowScope.OnboardingChoiceContent(
             color = ScanPangColors.OnSurfaceStrong,
         )
         if (!subtitle.isNullOrEmpty()) {
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(titleSubtitleSpacing))
             Text(
                 text = subtitle,
-                style = ScanPangType.caption12Medium,
+                style = subtitleTextStyle,
                 color = ScanPangColors.OnSurfaceMuted,
             )
         }

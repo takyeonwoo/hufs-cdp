@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -76,87 +78,99 @@ fun NotificationSettingsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = ScanPangColors.Background,
+        containerColor = ScanPangColors.Surface,
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
     ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ScanPangColors.Background)
-                .statusBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = ScanPangDimens.screenHorizontal),
-            verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+                .background(ScanPangColors.Surface)
+                .statusBarsPadding(),
         ) {
             SettingsTitleBar(
                 title = "알림 설정",
                 onBack = { navController.popBackStack() },
             )
-
-            // ── 알림 받기 ──────────────────────────────────────────────
-            ProfileSettingsSectionLabel(text = "알림 받기")
-            ProfileSettingsCard {
-                ProfileSettingsToggleRow(
-                    label = "푸시 알림",
-                    subtitle = "모든 알림을 한 번에 켜고 끕니다",
-                    icon = Icons.Rounded.Notifications,
-                    iconTint = ScanPangColors.Primary,
-                    checked = pushEnabled,
-                    onCheckedChange = {
-                        pushEnabled = it
-                        prefs.setPushEnabled(it)
-                    },
-                    showDividerBelow = false,
-                )
-            }
-
-            // ── 알림 종류 ──────────────────────────────────────────────
-            ProfileSettingsSectionLabel(text = "알림 종류")
-            ProfileSettingsCard {
-                if (showPrayerAlarm) {
-                    ProfileSettingsToggleRow(
-                        label = "기도 시간 알림",
-                        icon = Icons.Rounded.Mosque,
-                        iconTint = ScanPangColors.Primary,
-                        checked = prayerAlarmEnabled,
-                        onCheckedChange = {
-                            prayerAlarmEnabled = it
-                            prefs.setPrayerAlarmEnabled(it)
-                        },
-                        showDividerBelow = true,
-                    )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = ScanPangDimens.screenHorizontal)
+                    .verticalScroll(rememberScrollState())
+                    .padding(top = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                // ── 알림 받기 ──────────────────────────────────────────
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ProfileSettingsSectionLabel(text = "알림 받기")
+                    ProfileSettingsCard(bordered = false) {
+                        ProfileSettingsToggleRow(
+                            label = "푸시 알림",
+                            subtitle = "모든 알림을 한 번에 켜고 끕니다",
+                            icon = Icons.Rounded.Notifications,
+                            iconTint = ScanPangColors.Primary,
+                            checked = pushEnabled,
+                            onCheckedChange = {
+                                pushEnabled = it
+                                prefs.setPushEnabled(it)
+                            },
+                            showDividerBelow = false,
+                        )
+                    }
                 }
-                ProfileSettingsToggleRow(
-                    label = "이벤트 및 프로모션",
-                    icon = Icons.Rounded.Campaign,
-                    iconTint = ScanPangColors.Primary,
-                    checked = eventPromoEnabled,
-                    onCheckedChange = {
-                        eventPromoEnabled = it
-                        prefs.setEventPromoEnabled(it)
-                    },
-                    showDividerBelow = false,
-                )
-            }
 
-            // ── 방해 금지 ──────────────────────────────────────────────
-            ProfileSettingsSectionLabel(text = "방해 금지")
-            ProfileSettingsCard {
-                ProfileSettingsToggleRow(
-                    label = "방해 금지 모드",
-                    subtitle = "22:00 - 07:00 동안 알림을 받지 않습니다",
-                    icon = Icons.Rounded.DoNotDisturbOn,
-                    iconTint = ScanPangColors.Primary,
-                    checked = dndEnabled,
-                    onCheckedChange = {
-                        dndEnabled = it
-                        prefs.setDoNotDisturbEnabled(it)
-                    },
-                    showDividerBelow = false,
-                )
-            }
+                // ── 알림 종류 ──────────────────────────────────────────
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ProfileSettingsSectionLabel(text = "알림 종류")
+                    ProfileSettingsCard(bordered = false) {
+                        if (showPrayerAlarm) {
+                            ProfileSettingsToggleRow(
+                                label = "기도 시간 알림",
+                                icon = Icons.Rounded.Mosque,
+                                iconTint = ScanPangColors.Primary,
+                                checked = prayerAlarmEnabled,
+                                onCheckedChange = {
+                                    prayerAlarmEnabled = it
+                                    prefs.setPrayerAlarmEnabled(it)
+                                },
+                                showDividerBelow = true,
+                            )
+                        }
+                        ProfileSettingsToggleRow(
+                            label = "이벤트 및 프로모션",
+                            icon = Icons.Rounded.Campaign,
+                            iconTint = ScanPangColors.Primary,
+                            checked = eventPromoEnabled,
+                            onCheckedChange = {
+                                eventPromoEnabled = it
+                                prefs.setEventPromoEnabled(it)
+                            },
+                            showDividerBelow = false,
+                        )
+                    }
+                }
 
-            Spacer(modifier = Modifier.height(ScanPangSpacing.lg))
+                // ── 방해 금지 ──────────────────────────────────────────
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ProfileSettingsSectionLabel(text = "방해 금지")
+                    ProfileSettingsCard(bordered = false) {
+                        ProfileSettingsToggleRow(
+                            label = "방해 금지 모드",
+                            subtitle = "22:00 - 07:00 동안 알림을 받지 않습니다",
+                            icon = Icons.Rounded.DoNotDisturbOn,
+                            iconTint = ScanPangColors.Primary,
+                            checked = dndEnabled,
+                            onCheckedChange = {
+                                dndEnabled = it
+                                prefs.setDoNotDisturbEnabled(it)
+                            },
+                            showDividerBelow = false,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(ScanPangSpacing.lg))
+            }
         }
     }
 }

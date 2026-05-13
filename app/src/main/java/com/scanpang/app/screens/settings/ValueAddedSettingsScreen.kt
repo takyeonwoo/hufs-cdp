@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,8 +17,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.scanpang.app.data.OnboardingPreferences
 import com.scanpang.app.data.ValueAdded
@@ -27,6 +31,12 @@ import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
+
+private val SettingsValueAddedEmojiStyle = TextStyle(
+    fontSize = 32.sp,
+    lineHeight = 40.sp,
+    fontWeight = FontWeight.Normal,
+)
 
 private data class ValueAddedOption(
     val value: ValueAdded,
@@ -75,27 +85,31 @@ fun ValueAddedSettingsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = Color.White,
+        containerColor = ScanPangColors.Surface,
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
     ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .statusBarsPadding()
-                .padding(horizontal = ScanPangDimens.screenHorizontal),
+                .background(ScanPangColors.Surface)
+                .statusBarsPadding(),
         ) {
             SettingsTitleBar(
                 title = "부가가치 설정",
                 onBack = { navController.popBackStack() },
             )
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = ScanPangDimens.screenHorizontal)
+                    .padding(top = 16.dp),
+            ) {
             Text(
                 text = "여행 중 우선할 항목을 선택하세요. 안내와 알림이 이 선택에 맞춰집니다.",
-                style = ScanPangType.body14Regular,
+                style = ScanPangType.meta13.copy(lineHeight = 19.5.sp),
                 color = ScanPangColors.OnSurfaceMuted,
             )
             Spacer(modifier = Modifier.height(ScanPangSpacing.lg))
-            Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 options.forEach { opt ->
                     OnboardingSelectableCard(
                         selected = selected == opt.value,
@@ -103,14 +117,22 @@ fun ValueAddedSettingsScreen(
                             selected = opt.value
                             prefs.setValueAdded(opt.value)
                         },
+                        shape = RoundedCornerShape(14.dp),
+                        horizontalPadding = 20.dp,
+                        verticalPadding = 20.dp,
+                        horizontalGap = 16.dp,
                     ) {
                         OnboardingChoiceContent(
                             leading = opt.emoji,
                             title = opt.title,
                             subtitle = opt.subtitle,
+                            leadingTextStyle = SettingsValueAddedEmojiStyle,
+                            subtitleTextStyle = ScanPangType.meta13,
+                            titleSubtitleSpacing = 4.dp,
                         )
                     }
                 }
+            }
             }
         }
     }

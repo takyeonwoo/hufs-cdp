@@ -1,6 +1,7 @@
 package com.scanpang.app.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -90,17 +92,17 @@ fun ProfileScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = ScanPangColors.Background,
+        containerColor = ScanPangColors.Surface,
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
     ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(ScanPangColors.Background)
+                .background(ScanPangColors.Surface)
                 .statusBarsPadding()
                 .padding(horizontal = ScanPangDimens.screenHorizontal)
                 .padding(bottom = ScanPangDimens.mainTabContentBottomInset + ScanPangSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
                 Text(
@@ -114,6 +116,11 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(ScanPangShapes.radius16)
+                        .border(
+                            ScanPangDimens.borderHairline,
+                            ScanPangColors.OutlineSubtle,
+                            ScanPangShapes.radius16,
+                        )
                         .background(ScanPangColors.Surface)
                         .padding(ScanPangDimens.profileCardPadding),
                     verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
