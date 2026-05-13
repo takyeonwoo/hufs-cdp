@@ -71,7 +71,8 @@ import com.scanpang.app.components.ar.ArAgentChatMessage
 import com.scanpang.app.components.ar.ArCameraBackdrop
 import com.scanpang.app.components.ar.ArCircleIconButton
 import com.scanpang.app.components.ar.ArExploreInteractiveChatSection
-import com.scanpang.app.components.ar.ArFloorStoreGuideOverlay
+import com.scanpang.app.components.ar.ArStoreDetailOverlay
+import com.scanpang.app.components.ar.storeDetailFor
 import com.scanpang.app.components.ar.ArPoiFloatingDetailOverlay
 import com.scanpang.app.components.ar.ArPoiTabBuilding
 import com.scanpang.app.components.ar.ArExploreFilterPanelFigma
@@ -86,7 +87,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.scanpang.app.data.AppSettingsPreferences
+import com.scanpang.app.data.OnboardingPreferences
 import com.scanpang.app.data.SearchHistoryPreferences
+import com.scanpang.app.data.ValueAdded
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -138,6 +141,8 @@ fun ArExploreScreen(
     var arSearchHistoryTick by remember { mutableIntStateOf(0) }
     val searchHistoryPrefs = remember(appContext) { SearchHistoryPreferences(appContext) }
     val appSettingsPrefs = remember(appContext) { AppSettingsPreferences(appContext) }
+    val onboardingPrefs = remember(appContext) { OnboardingPreferences(appContext) }
+    val isHalalUser = remember { onboardingPrefs.getValueAdded() == ValueAdded.HALAL }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var isFrozen by remember { mutableStateOf(false) }
@@ -242,12 +247,13 @@ fun ArExploreScreen(
             }
         }
     }
-    val arExploreDemoHits = remember {
+    val arExploreDemoHits = remember(isHalalUser) {
         listOf(
-            ArExploreSearchHitUi("알리바바 케밥", "식당", "52m", "할랄 인증"),
-            ArExploreSearchHitUi("할랄가든 명동점", "식당", "120m", "할랄 인증"),
+            ArExploreSearchHitUi("알리바바 케밥", "식당", "52m", if (isHalalUser) "할랄 인증" else null),
+            ArExploreSearchHitUi("할랄가든 명동점", "식당", "120m", if (isHalalUser) "할랄 인증" else null),
             ArExploreSearchHitUi("명동성당", "관광지", "350m", null),
             ArExploreSearchHitUi("우리은행 환전소", "환전", "80m", null),
+            ArExploreSearchHitUi("세븐일레븐 명동점", "편의점", "30m", null),
         )
     }
     val arRecentQueries = remember(arSearchHistoryTick, isSearchOpen) {
@@ -561,16 +567,18 @@ fun ArExploreScreen(
                 )
             }
 
-            selectedStore?.let { store ->
-                ArFloorStoreGuideOverlay(
-                    storeName = store,
-                    onDismiss = { selectedStore = null },
-                    onStartNavigation = {
-                        navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
-                        selectedStore = null
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
+            selectedStore?.let { name ->
+                storeDetailFor(name)?.let { detail ->
+                    ArStoreDetailOverlay(
+                        detail = detail,
+                        onDismiss = { selectedStore = null },
+                        onStartNavigation = {
+                            navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                            selectedStore = null
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
     }

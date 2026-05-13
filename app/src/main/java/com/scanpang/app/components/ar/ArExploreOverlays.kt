@@ -1278,7 +1278,7 @@ fun ArExploreSearchPanelContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.verticalScroll(rememberScrollState()),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         // 검색바: pill 44dp, white93%, border, paddingLeft 14 / right 12
@@ -1398,13 +1398,21 @@ fun ArExploreSearchPanelContent(
                 }
             }
         } else {
-            // 검색 결과 카드 목록
-            searchHits.forEach { hit ->
-                ArExploreSearchResultCard(
-                    hit = hit,
-                    onViewInfo = { onHitViewInfo(hit) },
-                    onStartNav = { onHitStartNav(hit) },
-                )
+            // 검색 결과 카드 목록 — 3개 기준 높이로 제한, 이후 스크롤
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 270.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                searchHits.forEach { hit ->
+                    ArExploreSearchResultCard(
+                        hit = hit,
+                        onViewInfo = { onHitViewInfo(hit) },
+                        onStartNav = { onHitStartNav(hit) },
+                    )
+                }
             }
         }
     }
@@ -1418,100 +1426,102 @@ private fun ArExploreSearchResultCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         color = ScanPangColors.ArOverlayWhite93,
         border = BorderStroke(ScanPangDimens.borderHairline, ScanPangColors.OutlineSubtle),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Surface(
-                    modifier = Modifier.size(36.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.size(30.dp),
+                    shape = RoundedCornerShape(10.dp),
                     color = Color(0xFFD9D9D9).copy(alpha = 0.5f),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = categoryIcon(hit.category),
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(18.dp),
                             tint = categoryIconTint(hit.category),
                         )
                     }
                 }
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
                 ) {
-                    Text(
-                        text = hit.title,
-                        style = ScanPangType.body15Medium,
-                        color = ScanPangColors.OnSurfaceStrong,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "${hit.category} · ${hit.distance}",
-                        style = ScanPangType.caption12Medium,
-                        color = ScanPangColors.OnSurfaceMuted,
-                    )
-                    if (hit.badgeLabel != null) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Surface(
-                            shape = ScanPangShapes.badge6,
-                            color = ArExploreHalalBadgeBg,
-                        ) {
-                            Text(
-                                text = hit.badgeLabel,
-                                modifier = Modifier.padding(
-                                    horizontal = ScanPangSpacing.sm,
-                                    vertical = ScanPangDimens.badgePadVertical,
-                                ),
-                                style = ScanPangType.tag11Medium,
-                                color = ArExploreHalalBadgeFg,
-                            )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = hit.title,
+                            style = ScanPangType.chip13SemiBold,
+                            color = ScanPangColors.OnSurfaceStrong,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (hit.badgeLabel != null) {
+                            Surface(
+                                shape = ScanPangShapes.badge6,
+                                color = ArExploreHalalBadgeBg,
+                            ) {
+                                Text(
+                                    text = hit.badgeLabel,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                    style = ScanPangType.tag11Medium,
+                                    color = ArExploreHalalBadgeFg,
+                                )
+                            }
                         }
                     }
+                    Text(
+                        text = "${hit.category} · ${hit.distance}",
+                        style = ScanPangType.meta11Medium,
+                        color = ScanPangColors.OnSurfaceMuted,
+                    )
                 }
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(16.dp),
                     tint = ScanPangColors.OnSurfaceMuted,
                 )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 OutlinedButton(
                     onClick = onViewInfo,
                     modifier = Modifier
                         .weight(1f)
-                        .height(32.dp),
-                    shape = RoundedCornerShape(12.dp),
+                        .height(28.dp),
+                    shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(0.dp),
                     border = BorderStroke(ScanPangDimens.borderHairline, ScanPangColors.OutlineSubtle),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = ScanPangColors.OnSurfaceStrong),
                 ) {
-                    Text("정보 보기", style = ScanPangType.caption12Medium)
+                    Text("정보 보기", style = ScanPangType.meta11Medium)
                 }
                 Button(
                     onClick = onStartNav,
                     modifier = Modifier
                         .weight(1f)
-                        .height(32.dp),
-                    shape = RoundedCornerShape(12.dp),
+                        .height(28.dp),
+                    shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ScanPangColors.Primary),
                 ) {
-                    Text("길안내", style = ScanPangType.caption12Medium, color = Color.White)
+                    Text("길안내", style = ScanPangType.meta11Medium, color = Color.White)
                 }
             }
         }

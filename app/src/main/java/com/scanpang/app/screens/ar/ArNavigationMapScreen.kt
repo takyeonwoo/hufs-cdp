@@ -35,7 +35,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.scanpang.app.components.ar.ArCameraBackdrop
-import com.scanpang.app.components.ar.ArFloorStoreGuideOverlay
+import com.scanpang.app.components.ar.ArStoreDetailOverlay
+import com.scanpang.app.components.ar.storeDetailFor
 import com.scanpang.app.components.ar.ArNavActionCardCluster
 import com.scanpang.app.components.ar.ArNavAiGuideTabWithTextField
 import com.scanpang.app.components.ar.ArNavArrivedBadge
@@ -222,16 +223,18 @@ fun ArNavigationMapScreen(
             )
         }
 
-        selectedStore?.let { store ->
-            ArFloorStoreGuideOverlay(
-                storeName = store,
-                onDismiss = { selectedStore = null },
-                onStartNavigation = {
-                    navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
-                    selectedStore = null
-                },
-                modifier = Modifier.fillMaxSize(),
-            )
+        selectedStore?.let { name ->
+            storeDetailFor(name)?.let { detail ->
+                ArStoreDetailOverlay(
+                    detail = detail,
+                    onDismiss = { selectedStore = null },
+                    onStartNavigation = {
+                        navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                        selectedStore = null
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
 
         // TODO: 백엔드 연동 후 제거 — 디버그용 phase 토글
