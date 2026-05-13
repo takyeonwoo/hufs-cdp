@@ -25,12 +25,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CropFree
 import androidx.compose.material.icons.rounded.FilterList
-import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Search
@@ -57,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.content.ContextCompat
@@ -77,7 +79,13 @@ import com.scanpang.app.components.ar.ArExploreSearchHitUi
 import com.scanpang.app.components.ar.ArExploreSearchPanelContent
 import com.scanpang.app.components.ar.ArExploreSideColumn
 import com.scanpang.app.components.ar.arExploreCategoryChipSpecs
+import com.scanpang.app.components.ar.ArPoiPin
+import com.scanpang.app.components.ar.arExploreBuildingSamples
 import com.scanpang.app.components.ar.ArPoiPinsLayer
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.scanpang.app.data.AppSettingsPreferences
 import com.scanpang.app.data.SearchHistoryPreferences
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -129,9 +137,22 @@ fun ArExploreScreen(
     var arSearchQuery by remember { mutableStateOf("") }
     var arSearchHistoryTick by remember { mutableIntStateOf(0) }
     val searchHistoryPrefs = remember(appContext) { SearchHistoryPreferences(appContext) }
+    val appSettingsPrefs = remember(appContext) { AppSettingsPreferences(appContext) }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     var isFrozen by remember { mutableStateOf(false) }
-    var isTtsOn by remember { mutableStateOf(true) }
+    var isTtsOn by remember { mutableStateOf(appSettingsPrefs.isTtsEnabled()) }
+
+    // 프로필 화면에서 TTS 토글 변경 후 돌아왔을 때 상태 동기화
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isTtsOn = appSettingsPrefs.isTtsEnabled()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     var isSttListening by remember { mutableStateOf(false) }
     val ttsPlayingState = remember { mutableStateOf(false) }
@@ -207,6 +228,20 @@ fun ArExploreScreen(
     var selectedStore by remember { mutableStateOf<String?>(null) }
 
     val categoryChipSpecs = remember { arExploreCategoryChipSpecs() }
+    val buildingSamples = remember { arExploreBuildingSamples() }
+    // 필터 미선택: 건물 핀 / 필터 선택: 건물별 해당 카테고리 매장 1개 핀
+    val visiblePins = remember(categorySelection) {
+        if (categorySelection.isEmpty()) {
+            buildingSamples.map { ArPoiPin.BuildingPin(it) }
+        } else {
+            buildingSamples.mapNotNull { building ->
+                building.floorInfo
+                    .flatMap { it.stores }
+                    .firstOrNull { store -> store.category in categorySelection }
+                    ?.let { store -> ArPoiPin.StorePin(store, building) }
+            }
+        }
+    }
     val arExploreDemoHits = remember {
         listOf(
             ArExploreSearchHitUi("알리바바 케밥", "식당", "52m", "할랄 인증"),
@@ -275,17 +310,18 @@ fun ArExploreScreen(
                         .fillMaxWidth()
                         .height(
                             maxOf(
-                                ScanPangDimens.arCircleBtn36,
+                                ScanPangDimens.arSideFab44,
                                 ScanPangDimens.arStatusPillHeight,
                             ),
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ArCircleIconButton(
-                        icon = Icons.Rounded.Home,
-                        contentDescription = "홈",
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier,
+                        icon = Icons.Rounded.CameraAlt,
+                        contentDescription = "화면 고정",
+                        onClick = { isFrozen = !isFrozen },
+                        surfaceColor = if (isFrozen) ScanPangColors.ArPrimaryTranslucent else ScanPangColors.ArOverlayWhite80,
+                        iconTint = if (isFrozen) Color.White else ScanPangColors.OnSurfaceStrong,
                     )
                     Box(
                         modifier = Modifier
@@ -316,29 +352,38 @@ fun ArExploreScreen(
 
             Box(modifier = Modifier.fillMaxSize()) {
                 ArPoiPinsLayer(
-                    onPoiOneClick = {
-                        selectedPoi = "눈스퀘어"
-                        activeDetailTab = ArPoiTabBuilding
-                        selectedStore = null
-                    },
-                    onPoiTwoClick = {
-                        selectedPoi = "명동빌딩"
+                    pins = visiblePins,
+                    onPinClick = { pin ->
+                        selectedPoi = pin.buildingName
                         activeDetailTab = ArPoiTabBuilding
                         selectedStore = null
                     },
                 )
                 ArExploreSideColumn(
                     onTtsClick = {
-                        isTtsOn = !isTtsOn
-                        val msg = if (isTtsOn) "음성 안내 켜짐" else "음성 안내 꺼짐"
+                        val next = !isTtsOn
+                        isTtsOn = next
+                        appSettingsPrefs.setTtsEnabled(next)
+                        val msg = if (next) "음성 안내 켜짐" else "음성 안내 꺼짐"
                         scope.launch { snackbarHostState.showSnackbar(msg) }
                     },
-                    onCameraClick = { isFrozen = !isFrozen },
                     isTtsOn = isTtsOn,
-                    isFrozen = isFrozen,
                     isTtsPlaying = isTtsPlaying,
                 )
             }
+
+            // 하단 그라데이션 배경 — 탭바 뒤쪽 화면 맨 밑까지 확장 (Figma Frame 1: transparent → white 50%)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.White.copy(alpha = 0.5f)),
+                        ),
+                    ),
+            )
 
             Column(
                 modifier = Modifier
@@ -401,13 +446,13 @@ fun ArExploreScreen(
 
             AnimatedVisibility(
                 visible = isFilterOpen,
-                enter = slideInVertically { it },
-                exit = slideOutVertically { it },
+                enter = slideInVertically { -it },
+                exit = slideOutVertically { -it },
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(ScanPangColors.ArOverlayScrimDark)
+                        .background(Color.Transparent)
                         .clickable { isFilterOpen = false },
                 ) {
                     Surface(
@@ -415,10 +460,10 @@ fun ArExploreScreen(
                             .align(Alignment.TopCenter)
                             .fillMaxWidth()
                             .padding(horizontal = ScanPangDimens.arFilterPanelHorizontal)
-                            .padding(top = ScanPangSpacing.lg)
+                            .padding(top = ScanPangDimens.arFilterPanelTopOffset)
                             .clickable(enabled = false) { },
-                        shape = ScanPangShapes.arFilterPanelTop,
-                        color = ScanPangColors.Surface,
+                        shape = RoundedCornerShape(16.dp),
+                        color = ScanPangColors.ArOverlayWhite93,
                         shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
                     ) {
                         Column(
@@ -447,61 +492,54 @@ fun ArExploreScreen(
 
             AnimatedVisibility(
                 visible = isSearchOpen,
-                enter = slideInVertically { it },
-                exit = slideOutVertically { it },
+                enter = slideInVertically { -it },
+                exit = slideOutVertically { -it },
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(ScanPangColors.ArOverlayScrimDark)
+                        .background(Color.Transparent)
                         .clickable { isSearchOpen = false; showArSearchResults = false },
                 ) {
-                    Surface(
+                    ArExploreSearchPanelContent(
+                        query = arSearchQuery,
+                        onQueryChange = { arSearchQuery = it },
+                        onSubmitSearch = submitArSearch,
+                        recentQueries = arRecentQueries,
+                        onRecentQueryClick = { q ->
+                            arSearchQuery = q
+                            searchHistoryPrefs.add(q)
+                            arSearchHistoryTick++
+                            showArSearchResults = true
+                        },
+                        onRecentQueryRemove = { q ->
+                            searchHistoryPrefs.remove(q)
+                            arSearchHistoryTick++
+                        },
+                        onRecentClearAll = {
+                            searchHistoryPrefs.clearAll()
+                            arSearchHistoryTick++
+                        },
+                        showResultList = showArSearchResults,
+                        searchHits = displayedArHits,
+                        onHitViewInfo = { hit ->
+                            selectedPoi = hit.title
+                            activeDetailTab = ArPoiTabBuilding
+                            isSearchOpen = false
+                            showArSearchResults = false
+                        },
+                        onHitStartNav = {
+                            navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                            isSearchOpen = false
+                            showArSearchResults = false
+                        },
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .fillMaxWidth()
                             .padding(horizontal = ScanPangDimens.arFilterPanelHorizontal)
-                            .padding(top = ScanPangSpacing.lg)
+                            .padding(top = ScanPangDimens.arFilterPanelTopOffset)
                             .clickable(enabled = false) { },
-                        shape = ScanPangShapes.arSearchPanel,
-                        color = ScanPangColors.Surface,
-                        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-                    ) {
-                        ArExploreSearchPanelContent(
-                            query = arSearchQuery,
-                            onQueryChange = { arSearchQuery = it },
-                            onSubmitSearch = submitArSearch,
-                            recentQueries = arRecentQueries,
-                            onRecentQueryClick = { q ->
-                                arSearchQuery = q
-                                searchHistoryPrefs.add(q)
-                                arSearchHistoryTick++
-                                showArSearchResults = true
-                            },
-                            onRecentQueryRemove = { q ->
-                                searchHistoryPrefs.remove(q)
-                                arSearchHistoryTick++
-                            },
-                            onRecentClearAll = {
-                                searchHistoryPrefs.clearAll()
-                                arSearchHistoryTick++
-                            },
-                            showResultList = showArSearchResults,
-                            searchHits = displayedArHits,
-                            onHitViewInfo = { hit ->
-                                selectedPoi = hit.title
-                                activeDetailTab = ArPoiTabBuilding
-                                isSearchOpen = false
-                                showArSearchResults = false
-                            },
-                            onHitStartNav = {
-                                navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
-                                isSearchOpen = false
-                                showArSearchResults = false
-                            },
-                            modifier = Modifier.padding(ScanPangDimens.arTopBarHorizontal),
-                        )
-                    }
+                    )
                 }
             }
 

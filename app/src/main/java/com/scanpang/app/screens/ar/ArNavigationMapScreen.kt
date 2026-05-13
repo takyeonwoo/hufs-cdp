@@ -17,11 +17,17 @@ import androidx.compose.material.icons.rounded.TurnSharpRight
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.scanpang.app.data.AppSettingsPreferences
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -60,6 +66,21 @@ fun ArNavigationMapScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val appSettingsPrefs = remember(context) { AppSettingsPreferences(context.applicationContext) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var isTtsOn by remember { mutableStateOf(appSettingsPrefs.isTtsEnabled()) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isTtsOn = appSettingsPrefs.isTtsEnabled()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     var activeTab by remember { mutableStateOf(NAV_TAB_MAP) }
     var navState by remember { mutableStateOf<NavigationUiState>(NavigationSamples.Cruising) }
     var aiQuery by remember { mutableStateOf("") }
@@ -141,7 +162,7 @@ fun ArNavigationMapScreen(
 
         ArNavTopHud(
             modifier = Modifier.align(Alignment.TopStart),
-            onHomeClick = { navController.popBackStack() },
+            onCameraClick = { },
             onSearchClick = {
                 navController.navigate(AppRoutes.ArExplore) { launchSingleTop = true }
             },
@@ -162,8 +183,12 @@ fun ArNavigationMapScreen(
         )
 
         ArNavSideVolumeCamera(
-            onVolumeClick = { },
-            onCameraClick = { },
+            isTtsOn = isTtsOn,
+            onVolumeClick = {
+                val next = !isTtsOn
+                isTtsOn = next
+                appSettingsPrefs.setTtsEnabled(next)
+            },
         )
 
         when (navState.phase) {

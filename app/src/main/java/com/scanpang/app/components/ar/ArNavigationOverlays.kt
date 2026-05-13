@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Check
@@ -79,7 +80,7 @@ import com.scanpang.app.ui.theme.ScanPangType
 @Composable
 fun ArNavTopHud(
     modifier: Modifier = Modifier,
-    onHomeClick: () -> Unit,
+    onCameraClick: () -> Unit,
     onSearchClick: () -> Unit,
     destinationPill: @Composable () -> Unit,
 ) {
@@ -109,9 +110,9 @@ fun ArNavTopHud(
                 ),
         ) {
             ArNavWhiteFab(
-                icon = Icons.Rounded.Home,
-                contentDescription = "홈",
-                onClick = onHomeClick,
+                icon = Icons.Rounded.CameraAlt,
+                contentDescription = "화면 캡처",
+                onClick = onCameraClick,
                 modifier = Modifier.align(Alignment.CenterStart),
             )
             Box(Modifier.align(Alignment.Center)) {
@@ -202,29 +203,19 @@ fun ArNavDestinationPill(
 @Composable
 fun BoxScope.ArNavSideVolumeCamera(
     onVolumeClick: () -> Unit,
-    onCameraClick: () -> Unit,
+    isTtsOn: Boolean = true,
 ) {
-    Column(
+    ArNavWhiteFab(
+        icon = if (isTtsOn) Icons.AutoMirrored.Rounded.VolumeUp else Icons.AutoMirrored.Rounded.VolumeOff,
+        contentDescription = if (isTtsOn) "음성 안내 켜짐" else "음성 안내 꺼짐",
+        onClick = onVolumeClick,
         modifier = Modifier
             .align(Alignment.TopEnd)
             .padding(
                 end = ScanPangDimens.arSideColumnEnd,
                 top = ScanPangDimens.arSideColumnTop,
             ),
-        verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arSideIconGap),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        ArNavWhiteFab(
-            icon = Icons.AutoMirrored.Rounded.VolumeUp,
-            contentDescription = "볼륨",
-            onClick = onVolumeClick,
-        )
-        ArNavWhiteFab(
-            icon = Icons.Rounded.CameraAlt,
-            contentDescription = "촬영",
-            onClick = onCameraClick,
-        )
-    }
+    )
 }
 
 @Composable
