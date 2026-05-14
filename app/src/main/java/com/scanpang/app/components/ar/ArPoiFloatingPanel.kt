@@ -115,6 +115,8 @@ fun ArPoiFloatingDetailOverlay(
     modifier: Modifier = Modifier,
     isSaved: Boolean = false,
     onSave: () -> Unit = {},
+    distance: String = "–",
+    category: String = "장소",
 ) {
     var expandedFloors by remember { mutableStateOf(setOf("B1")) }
     val floorData = DummyData.noonSquareFloorSections
@@ -183,7 +185,7 @@ fun ArPoiFloatingDetailOverlay(
                     }
                 }
 
-                ArPoiStatusMetaRow()
+                ArPoiStatusMetaRow(distance = distance, category = category)
 
                 ArPoiDetailSegmentedTabs(active = activeDetailTab, onSelect = onActiveDetailTabChange)
 
@@ -213,7 +215,10 @@ fun ArPoiFloatingDetailOverlay(
 }
 
 @Composable
-private fun ArPoiStatusMetaRow() {
+private fun ArPoiStatusMetaRow(
+    distance: String,
+    category: String,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -223,13 +228,13 @@ private fun ArPoiStatusMetaRow() {
     ) {
         Surface(shape = RoundedCornerShape(6.dp), color = ScanPangColors.PrimarySoft) {
             Text(
-                text = "쇼핑몰",
+                text = category,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                 style = ScanPangType.meta11SemiBold,
                 color = ScanPangColors.Primary,
             )
         }
-        Text(text = "15m", style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceStrong)
+        Text(text = distance, style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceStrong)
         Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(ScanPangColors.Success))
         Text(text = "영업 중", style = ScanPangType.meta11SemiBold, color = ScanPangColors.Success)
     }

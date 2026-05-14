@@ -61,7 +61,9 @@ object AppRoutes {
     const val PlaceDetailPlaceIdArg = "placeId"
     fun placeDetailRoute(categoryKey: String, placeId: String) = "place_detail/$categoryKey/$placeId"
     const val ArExplore = "ar_explore"
-    const val ArNavMap = "ar_nav_map"
+    const val ArNavMap = "ar_nav_map?destination={destination}"
+    const val ArNavMapDestinationArg = "destination"
+    fun arNavMapRoute(destination: String) = "ar_nav_map?destination=${android.net.Uri.encode(destination)}"
 
     // 내 정보 → 상세 설정 페이지들
     const val SettingsLanguage = "settings_language"
@@ -149,8 +151,18 @@ fun AppNavHost(
         composable(AppRoutes.ArExplore) {
             ArExploreScreen(navController = navController)
         }
-        composable(AppRoutes.ArNavMap) {
-            ArNavigationMapScreen(navController = navController)
+        composable(
+            route = AppRoutes.ArNavMap,
+            arguments = listOf(
+                navArgument(AppRoutes.ArNavMapDestinationArg) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { entry ->
+            val destination = entry.arguments?.getString(AppRoutes.ArNavMapDestinationArg)
+            ArNavigationMapScreen(navController = navController, destinationName = destination)
         }
         composable(AppRoutes.SettingsLanguage) {
             LanguageSettingsScreen(navController = navController)

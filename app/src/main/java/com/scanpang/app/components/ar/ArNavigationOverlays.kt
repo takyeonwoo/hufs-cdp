@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.ArrowUpward
@@ -36,14 +38,15 @@ import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.CurrencyExchange
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,23 +54,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.coerceAtLeast
-import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.statusBarsPadding
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.scanpang.app.ui.ScanPangFigmaAssets
@@ -369,23 +368,6 @@ fun BoxScope.ArNavPoiFab(
     }
 }
 
-private fun snapNavSheetToNearestAnchors(
-    current: Dp,
-    collapsed: Dp,
-    defaultResting: Dp,
-    expanded: Dp,
-): Dp {
-    fun dist(target: Dp) = kotlin.math.abs(target.value - current.value)
-    val dCollapsed = dist(collapsed)
-    val dDefault = dist(defaultResting)
-    val dExpanded = dist(expanded)
-    return when {
-        dCollapsed <= dDefault && dCollapsed <= dExpanded -> collapsed
-        dDefault <= dExpanded -> defaultResting
-        else -> expanded
-    }
-}
-
 @Composable
 fun ArNavBottomSheet(
     mapTabSelected: Boolean,
@@ -395,63 +377,39 @@ fun ArNavBottomSheet(
     mapContent: @Composable () -> Unit,
     agentContent: @Composable () -> Unit,
 ) {
-    val configuration = LocalConfiguration.current
     val density = LocalDensity.current
-    val collapsedH = ScanPangDimens.arNavBottomSheetCollapsedHeight
-    val expandedCap = remember(configuration.screenHeightDp) {
-        minOf(
-            ScanPangDimens.arNavBottomSheetExpandedHeight,
-            (configuration.screenHeightDp * 0.5f).dp,
-        )
-    }
-    val defaultRestingH = remember(collapsedH, expandedCap) {
-        ScanPangDimens.arNavBottomSheetDefaultHeight.coerceIn(collapsedH, expandedCap)
-    }
-    var sheetHeight by remember(collapsedH, defaultRestingH, expandedCap) {
-        mutableStateOf(defaultRestingH)
-    }
-
-    LaunchedEffect(collapsedH, defaultRestingH, expandedCap) {
-        sheetHeight = sheetHeight.coerceIn(collapsedH, expandedCap)
-    }
+    val minH = ScanPangDimens.arNavBottomSheetCollapsedHeight
+    val maxH = ScanPangDimens.arNavBottomPanelHeight
+    var contentHeight by remember { mutableStateOf(maxH) }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = ScanPangShapes.arNavBottomSheetTop,
-        color = ScanPangColors.ArNavBottomSheetSurface,
-        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
+        color = ScanPangColors.ArNavBottomPanelSurface,
         tonalElevation = 0.dp,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(sheetHeight),
+                // 패널 배경이 탭바 아래까지 연장되도록 mainTabContentBottomInset 추가
+                .height(contentHeight + ScanPangDimens.mainTabContentBottomInset),
         ) {
+            // 드래그 핸들 바
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ScanPangDimens.arNavBottomSheetDragH)
-                    .pointerInput(collapsedH, defaultRestingH, expandedCap, density) {
+                    .pointerInput(minH, maxH, density) {
                         detectVerticalDragGestures(
-                            onVerticalDrag = { _, dragAmount ->
-                                val delta = with(density) { dragAmount.toDp() }
-                                sheetHeight = (sheetHeight - delta).coerceIn(collapsedH, expandedCap)
+                            onVerticalDrag = { _, delta ->
+                                val dpDelta = with(density) { delta.toDp() }
+                                contentHeight = (contentHeight - dpDelta).coerceIn(minH, maxH)
                             },
                             onDragEnd = {
-                                sheetHeight = snapNavSheetToNearestAnchors(
-                                    sheetHeight,
-                                    collapsedH,
-                                    defaultRestingH,
-                                    expandedCap,
-                                )
+                                contentHeight = if (contentHeight < (minH + maxH) / 2) minH else maxH
                             },
                             onDragCancel = {
-                                sheetHeight = snapNavSheetToNearestAnchors(
-                                    sheetHeight,
-                                    collapsedH,
-                                    defaultRestingH,
-                                    expandedCap,
-                                )
+                                contentHeight = if (contentHeight < (minH + maxH) / 2) minH else maxH
                             },
                         )
                     },
@@ -487,18 +445,11 @@ fun ArNavBottomSheet(
                 if (mapTabSelected) {
                     mapContent()
                 } else {
-                    Column(Modifier.fillMaxSize()) {
-                        Spacer(Modifier.height(ScanPangDimens.arNavAiGuideTabToChatGap))
-                        Box(
-                            Modifier
-                                .weight(1f, fill = true)
-                                .fillMaxWidth(),
-                        ) {
-                            agentContent()
-                        }
-                    }
+                    agentContent()
                 }
             }
+            // 탭바 영역 — 배경은 채우되 콘텐츠 없음
+            Spacer(Modifier.height(ScanPangDimens.mainTabContentBottomInset))
         }
     }
 }
@@ -660,139 +611,119 @@ fun ArNavAiGuideTabWithTextField(
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val glassGradient = remember {
-        Brush.verticalGradient(
-            colors = listOf(
-                ScanPangColors.ArNavBottomGlassGradientTop,
-                ScanPangColors.ArNavBottomGlassGradientMiddle,
-                ScanPangColors.ArNavBottomGlassGradientBottom,
-            ),
-        )
-    }
-    Box(modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(ScanPangShapes.arNavAiGuideGlassTop)
-                .background(glassGradient),
-        )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = ScanPangDimens.arTopBarHorizontal)
+            .padding(bottom = ScanPangDimens.arNavAiGuideChatBottomPadding),
+        verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arNavAiGuideInputBottomGap),
+    ) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(
-                    top = ScanPangDimens.arNavAiGuideChatOffsetY,
-                    bottom = ScanPangDimens.arNavAiGuideChatBottomPadding,
-                ),
-            verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arNavAiGuideInputBottomGap),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = ScanPangDimens.arTopBarHorizontal),
-                verticalArrangement = Arrangement.Bottom,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+                Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
+                    Surface(
+                        shape = ScanPangShapes.arBubbleUser,
+                        color = ScanPangColors.Primary,
+                        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
                     ) {
-                        Surface(
-                            shape = ScanPangShapes.arBubbleUser,
-                            color = ScanPangColors.Primary,
-                            shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-                        ) {
-                            Text(
-                                text = userMessage,
-                                modifier = Modifier.padding(
-                                    horizontal = ScanPangDimens.arTopBarHorizontal,
-                                    vertical = ScanPangDimens.icon10,
-                                ),
-                                style = ScanPangType.arNavTab13Inactive,
-                                color = Color.White,
-                                maxLines = 3,
-                            )
-                        }
+                        Text(
+                            text = userMessage,
+                            modifier = Modifier.padding(
+                                horizontal = ScanPangDimens.arTopBarHorizontal,
+                                vertical = ScanPangDimens.icon10,
+                            ),
+                            style = ScanPangType.arNavTab13Inactive,
+                            color = Color.White,
+                            maxLines = 3,
+                        )
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Start,
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                ) {
+                    Surface(
+                        shape = ScanPangShapes.arBubbleAgent,
+                        color = ScanPangColors.ArOverlayWhite93,
+                        shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
                     ) {
-                        Surface(
-                            shape = ScanPangShapes.arBubbleAgent,
-                            color = ScanPangColors.ArOverlayWhite93,
-                            shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-                        ) {
-                            Text(
-                                text = agentMessage,
-                                modifier = Modifier.padding(
-                                    horizontal = ScanPangDimens.arTopBarHorizontal,
-                                    vertical = ScanPangDimens.icon10,
-                                ),
-                                style = ScanPangType.arNavTab13Inactive,
-                                color = ScanPangColors.OnSurfaceStrong,
-                                maxLines = 4,
-                            )
-                        }
+                        Text(
+                            text = agentMessage,
+                            modifier = Modifier.padding(
+                                horizontal = ScanPangDimens.arTopBarHorizontal,
+                                vertical = ScanPangDimens.icon10,
+                            ),
+                            style = ScanPangType.arNavTab13Inactive,
+                            color = ScanPangColors.OnSurfaceStrong,
+                            maxLines = 4,
+                        )
                     }
                 }
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = ScanPangDimens.arTopBarHorizontal)
-                    .heightIn(min = ScanPangDimens.arExploreChatInputBarMinHeight)
-                    .clip(ScanPangShapes.arInputPill)
-                    .background(ScanPangColors.ArOverlayWhite93)
-                    .padding(
-                        horizontal = ScanPangDimens.arInputInnerPadH,
-                        vertical = ScanPangDimens.arExploreChatInputInnerPadV,
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ScanPangDimens.arNavGuideInputHeight)
+                .clip(ScanPangShapes.arInputPill)
+                .background(ScanPangColors.ArOverlayWhite85)
+                .padding(horizontal = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+        ) {
+            ArMicSttButton(
+                isListening = isSttListening,
+                onClick = onMicClick,
+            )
+            TextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.weight(1f),
+                placeholder = {
+                    Text(
+                        text = placeholder,
+                        style = ScanPangType.arNavGuideInput13,
+                        color = ScanPangColors.OnSurfacePlaceholder,
+                    )
+                },
+                textStyle = ScanPangType.arNavGuideInput13.copy(color = ScanPangColors.OnSurfaceStrong),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { onSend() }),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    cursorColor = ScanPangColors.Primary,
+                ),
+            )
+            Surface(
+                modifier = Modifier.size(ScanPangDimens.arNavGuideSendBtn),
+                shape = CircleShape,
+                color = ScanPangColors.ArNavSendButtonBg,
+                onClick = onSend,
             ) {
-                ArMicSttButton(
-                    isListening = isSttListening,
-                    onClick = onMicClick,
-                )
-                TextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    modifier = Modifier.weight(1f),
-                    placeholder = {
-                        Text(
-                            text = placeholder,
-                            style = ScanPangType.searchPlaceholderRegular,
-                            color = ScanPangColors.OnSurfacePlaceholder,
-                        )
-                    },
-                    textStyle = ScanPangType.body15Medium.copy(color = ScanPangColors.OnSurfaceStrong),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { onSend() }),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                        cursorColor = ScanPangColors.Primary,
-                    ),
-                )
-                IconButton(
-                    onClick = onSend,
-                    enabled = query.isNotBlank(),
-                ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.Send,
+                        imageVector = Icons.Rounded.ArrowUpward,
                         contentDescription = "전송",
-                        modifier = Modifier.size(ScanPangDimens.icon16),
-                        tint = if (query.isNotBlank()) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
+                        modifier = Modifier.size(ScanPangDimens.icon18),
+                        tint = if (query.isNotBlank()) ScanPangColors.OnSurfaceStrong else ScanPangColors.OnSurfacePlaceholder,
                     )
                 }
             }
@@ -1052,6 +983,118 @@ fun BoxScope.ArNavArrivedBadge(
             )
         }
     }
+}
+
+/**
+ * 길안내 종료 드롭다운 패널.
+ * 목적지 pill 바로 아래에 컴팩트하게 표시되며, 영역 밖 탭 시 닫힌다.
+ */
+@Composable
+fun ArNavStopNavigationSheet(
+    destinationName: String,
+    onDismiss: () -> Unit,
+    onStopNavigation: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        // 영역 밖 탭 → 닫기 (ripple 없이)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onDismiss,
+                ),
+        )
+        // 상단 HUD 바로 아래에 표시되는 드롭다운 카드
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                // HUD 내부 높이(FAB 40dp + 하단 패딩 12dp) 만큼 내려서 pill 바로 아래 위치
+                .padding(top = ScanPangDimens.arNavTopFab40 + ScanPangDimens.arTopBarBottomPadding)
+                .padding(horizontal = ScanPangDimens.arTopBarHorizontal)
+                .fillMaxWidth()
+                .clickable(enabled = false, onClick = {}),
+            shape = ScanPangShapes.radius16,
+            color = ScanPangColors.Surface,
+            shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(ScanPangSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(ScanPangDimens.arNavGuideInputHeight),
+                    shape = ScanPangShapes.filterChip,
+                    color = ScanPangColors.DangerStrong,
+                    onClick = onStopNavigation,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "길안내 종료",
+                            style = ScanPangType.title16SemiBold,
+                            color = Color.White,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 길안내 종료 확인 다이얼로그.
+ * "탐색으로 돌아가기"와 "홈으로 돌아가기" 중 하나를 선택한다.
+ */
+@Composable
+fun ArNavStopConfirmDialog(
+    onNavigateToExplore: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "길안내를 종료할까요?",
+                style = ScanPangType.arFilterTitle16,
+                color = ScanPangColors.OnSurfaceStrong,
+            )
+        },
+        text = {
+            Text(
+                text = "이동할 위치를 선택해주세요.",
+                style = ScanPangType.body14Regular,
+                color = ScanPangColors.OnSurfaceMuted,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onNavigateToExplore) {
+                Text(
+                    text = "탐색으로 돌아가기",
+                    style = ScanPangType.title14,
+                    color = ScanPangColors.Primary,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onNavigateToHome) {
+                Text(
+                    text = "홈으로 돌아가기",
+                    style = ScanPangType.title14,
+                    color = ScanPangColors.OnSurfaceMuted,
+                )
+            }
+        },
+        containerColor = ScanPangColors.Surface,
+        shape = ScanPangShapes.radius16,
+    )
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFFCCCCCC, widthDp = 360, heightDp = 480)

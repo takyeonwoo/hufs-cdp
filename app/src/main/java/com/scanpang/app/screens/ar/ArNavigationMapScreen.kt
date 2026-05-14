@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,8 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.UTurnLeft
 import androidx.compose.material.icons.rounded.ArrowUpward
-import androidx.compose.material.icons.rounded.TurnSharpLeft
-import androidx.compose.material.icons.rounded.TurnSharpRight
+import androidx.compose.material.icons.rounded.TurnLeft
+import androidx.compose.material.icons.rounded.TurnRight
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +32,6 @@ import com.scanpang.app.data.AppSettingsPreferences
 import com.scanpang.app.data.SavedPlaceEntry
 import com.scanpang.app.data.SavedPlacesStore
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -49,6 +49,8 @@ import com.scanpang.app.components.ar.ArNavMapImageContent
 import com.scanpang.app.components.ar.ArNavSideVolumeCamera
 import com.scanpang.app.components.ar.ArNavTopHud
 import com.scanpang.app.components.ar.ArNavTurnBadge
+import com.scanpang.app.components.ar.ArNavStopNavigationSheet
+import com.scanpang.app.components.ar.ArNavStopConfirmDialog
 import com.scanpang.app.components.ar.ArPoiFloatingDetailOverlay
 import com.scanpang.app.components.ar.ArPoiTabBuilding
 import com.scanpang.app.navigation.AppRoutes
@@ -67,6 +69,7 @@ private const val NAV_TAB_AI = "ai"
 @Composable
 fun ArNavigationMapScreen(
     navController: NavController,
+    destinationName: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -87,13 +90,21 @@ fun ArNavigationMapScreen(
     val savedStore = remember { SavedPlacesStore(context) }
     var savedPoiIds by remember { mutableStateOf(savedStore.getAll().map { it.id }.toSet()) }
 
+    val effectiveDestination = destinationName ?: NavigationSamples.Cruising.destinationName
+
     var activeTab by remember { mutableStateOf(NAV_TAB_MAP) }
-    var navState by remember { mutableStateOf<NavigationUiState>(NavigationSamples.Cruising) }
+    var navState by remember {
+        mutableStateOf<NavigationUiState>(
+            NavigationSamples.Cruising.copy(destinationName = effectiveDestination)
+        )
+    }
     var aiQuery by remember { mutableStateOf("") }
     var navAiSttListening by remember { mutableStateOf(false) }
     var selectedPoi by remember { mutableStateOf<String?>(null) }
     var activePoiDetailTab by remember { mutableStateOf(ArPoiTabBuilding) }
     var selectedStore by remember { mutableStateOf<String?>(null) }
+    var showStopNavSheet by remember { mutableStateOf(false) }
+    var showStopConfirmDialog by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         ArCameraBackdrop(showFreezeTint = false, modifier = Modifier.fillMaxSize())
@@ -126,19 +137,6 @@ fun ArNavigationMapScreen(
                         },
                     )
                 },
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(ScanPangDimens.arNavBottomPillZoneHeight)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                ScanPangColors.ArNavBottomPillGradientTop,
-                                ScanPangColors.ArNavBottomPillGradientBottom,
-                            ),
-                        ),
-                    ),
             )
         }
 
@@ -184,6 +182,7 @@ fun ArNavigationMapScreen(
                 ArNavDestinationPill(
                     text = pillText,
                     containerColor = pillColor,
+                    onClick = { showStopNavSheet = true },
                 )
             },
         )
@@ -244,12 +243,42 @@ fun ArNavigationMapScreen(
                     detail = detail,
                     onDismiss = { selectedStore = null },
                     onStartNavigation = {
-                        navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                        navController.navigate(AppRoutes.arNavMapRoute(name)) { launchSingleTop = true }
                         selectedStore = null
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+        }
+
+        if (showStopNavSheet) {
+            ArNavStopNavigationSheet(
+                destinationName = navState.destinationName,
+                onDismiss = { showStopNavSheet = false },
+                onStopNavigation = {
+                    showStopNavSheet = false
+                    showStopConfirmDialog = true
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        if (showStopConfirmDialog) {
+            ArNavStopConfirmDialog(
+                onNavigateToExplore = {
+                    navController.navigate(AppRoutes.ArExplore) {
+                        popUpTo(AppRoutes.ArExplore) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(AppRoutes.Home) {
+                        popUpTo(AppRoutes.Home) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                },
+                onDismiss = { showStopConfirmDialog = false },
+            )
         }
 
         // TODO: 백엔드 연동 후 제거 — 디버그용 phase 토글
@@ -262,10 +291,11 @@ fun ArNavigationMapScreen(
                     bottom = 80.dp, // TODO: 임시 — 바텀시트와 겹치지 않게 (디버그 토글 제거 시 함께 삭제)
                 )
                 .clickable {
+                    val dest = navState.destinationName
                     navState = when (navState.phase) {
-                        NavigationPhase.Cruising -> NavigationSamples.Approaching
-                        NavigationPhase.Approaching -> NavigationSamples.Arrived
-                        NavigationPhase.Arrived -> NavigationSamples.Cruising
+                        NavigationPhase.Cruising -> NavigationSamples.Approaching.copy(destinationName = dest)
+                        NavigationPhase.Approaching -> NavigationSamples.Arrived.copy(destinationName = dest)
+                        NavigationPhase.Arrived -> NavigationSamples.Cruising.copy(destinationName = dest)
                     }
                 },
             shape = ScanPangShapes.filterChip,
@@ -321,8 +351,8 @@ private fun navPoiSavedEntry(poiName: String): SavedPlaceEntry {
  * 항상 일치하도록 보장한다.
  */
 private fun TurnDirection.toIcon(): ImageVector = when (this) {
-    TurnDirection.Left -> Icons.Rounded.TurnSharpLeft
-    TurnDirection.Right -> Icons.Rounded.TurnSharpRight
+    TurnDirection.Left -> Icons.Rounded.TurnLeft
+    TurnDirection.Right -> Icons.Rounded.TurnRight
     TurnDirection.Straight -> Icons.Rounded.ArrowUpward
     TurnDirection.UTurn -> Icons.Rounded.UTurnLeft
 }

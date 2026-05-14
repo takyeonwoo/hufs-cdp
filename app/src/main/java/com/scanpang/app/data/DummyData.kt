@@ -71,6 +71,8 @@ data class ArExploreDemoHit(
     val category: String,
     val distance: String,
     val isHalal: Boolean = false,
+    val lat: Double = 37.5636,
+    val lng: Double = 126.9869,
 )
 
 enum class HalalCategory(val label: String) {
@@ -112,6 +114,8 @@ data class ArBuildingPoi(
     val name: String,
     val category: String,
     val distance: String,
+    val lat: Double = 37.5636,
+    val lng: Double = 126.9869,
     val floorInfo: List<ArBuildingFloor>,
 )
 
@@ -631,6 +635,8 @@ object DummyData {
             name = "눈스퀘어",
             category = "쇼핑",
             distance = "10m",
+            lat = 37.5630,
+            lng = 126.9844,
             floorInfo = listOf(
                 ArBuildingFloor("B1", listOf(
                     ArBuildingStore("스타벅스", "카페"),
@@ -650,6 +656,8 @@ object DummyData {
             name = "롯데영플라자",
             category = "쇼핑",
             distance = "25m",
+            lat = 37.5634,
+            lng = 126.9828,
             floorInfo = listOf(
                 ArBuildingFloor("1F", listOf(
                     ArBuildingStore("세븐일레븐", "편의점"),
@@ -942,11 +950,11 @@ object DummyData {
         DemoChatMessage("아미나님, 오늘은 어떤 할랄 맛집을 찾으세요?", true),
     )
     val arExploreDemoHits: List<ArExploreDemoHit> = listOf(
-        ArExploreDemoHit("알리바바 케밥", "식당", "52m", true),
-        ArExploreDemoHit("할랄가든 명동점", "식당", "120m", true),
-        ArExploreDemoHit("명동성당", "관광지", "350m", false),
-        ArExploreDemoHit("우리은행 환전소", "환전", "80m", false),
-        ArExploreDemoHit("세븐일레븐 명동점", "편의점", "30m", false),
+        ArExploreDemoHit("알리바바 케밥",    "식당",   "52m",  true,  37.5638, 126.9872),
+        ArExploreDemoHit("할랄가든 명동점", "식당",   "120m", true,  37.5641, 126.9858),
+        ArExploreDemoHit("명동성당",        "관광지", "350m", false, 37.5633, 126.9871),
+        ArExploreDemoHit("우리은행 환전소", "환전",   "80m",  false, 37.5630, 126.9856),
+        ArExploreDemoHit("세븐일레븐 명동점","편의점", "30m",  false, 37.5637, 126.9868),
     )
     val arNavDemoUserMessage: String = "눈스퀘어가 뭐야?"
     val arNavDemoAgentMessage: String = "거의 다 왔어요! 입구는 정면 오른쪽이에요."

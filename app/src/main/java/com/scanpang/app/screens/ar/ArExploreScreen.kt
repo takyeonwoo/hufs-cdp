@@ -92,6 +92,8 @@ import com.scanpang.app.data.SavedPlacesStore
 import com.scanpang.app.data.SearchHistoryPreferences
 import com.scanpang.app.data.ValueAdded
 import com.scanpang.app.navigation.AppRoutes
+import com.scanpang.app.util.distanceText
+import com.scanpang.app.util.rememberUserLocation
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangShapes
@@ -220,6 +222,20 @@ fun ArExploreScreen(
         pendingMicAfterPermission = false
     }
 
+    val userLocation by rememberUserLocation()
+
+    // 위치 권한이 아직 없으면 진입 시 한 번 요청
+    val locationPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* 거부해도 fallback 거리 문자열 사용 */ }
+    LaunchedEffect(Unit) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
     val savedStore = remember { SavedPlacesStore(context) }
     var savedPoiIds by remember { mutableStateOf(savedStore.getAll().map { it.id }.toSet()) }
 
@@ -242,12 +258,15 @@ fun ArExploreScreen(
             }
         }
     }
-    val arExploreDemoHits = remember(isHalalUser) {
+    val arExploreDemoHits = remember(isHalalUser, userLocation) {
         DummyData.arExploreDemoHits.map { hit ->
+            val dist = userLocation?.let { loc ->
+                distanceText(loc.latitude, loc.longitude, hit.lat, hit.lng)
+            } ?: hit.distance
             ArExploreSearchHitUi(
                 hit.name,
                 hit.category,
-                hit.distance,
+                dist,
                 if (isHalalUser && hit.isHalal) "할랄 인증" else null,
             )
         }
@@ -538,8 +557,8 @@ fun ArExploreScreen(
                             isSearchOpen = false
                             showArSearchResults = false
                         },
-                        onHitStartNav = {
-                            navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                        onHitStartNav = { hit ->
+                            navController.navigate(AppRoutes.arNavMapRoute(hit.title)) { launchSingleTop = true }
                             isSearchOpen = false
                             showArSearchResults = false
                         },
@@ -555,6 +574,12 @@ fun ArExploreScreen(
 
             selectedPoi?.let { poi ->
                 val poiSaved = poi in savedPoiIds
+                val building = DummyData.arBuildingPois.firstOrNull { it.name == poi }
+                val buildingDist = building?.let { bld ->
+                    userLocation?.let { loc ->
+                        distanceText(loc.latitude, loc.longitude, bld.lat, bld.lng)
+                    } ?: bld.distance
+                } ?: "–"
                 ArPoiFloatingDetailOverlay(
                     poiName = poi,
                     activeDetailTab = activeDetailTab,
@@ -574,6 +599,8 @@ fun ArExploreScreen(
                         }
                         savedPoiIds = savedStore.getAll().map { it.id }.toSet()
                     },
+                    distance = buildingDist,
+                    category = building?.category ?: "장소",
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -584,7 +611,7 @@ fun ArExploreScreen(
                     detail = storeDetail,
                     onDismiss = { selectedStore = null },
                     onStartNavigation = {
-                        navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                        navController.navigate(AppRoutes.arNavMapRoute(name)) { launchSingleTop = true }
                         selectedStore = null
                     },
                     modifier = Modifier.fillMaxSize(),

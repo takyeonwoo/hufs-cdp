@@ -115,6 +115,10 @@ object ScanPangColors {
     val ArNavBottomPillGradientTop get() = ArNavBottomGlassGradientMiddle
     /** 메인 탭바 위 스트립 그라데이션 하단 */
     val ArNavBottomPillGradientBottom get() = ArNavBottomGlassGradientBottom
+    /** AR 길안내 바텀 패널 표면 — white 70% (Figma 스펙) */
+    val ArNavBottomPanelSurface = Color(0xB3FFFFFF)
+    /** AR 길안내 인풋 바 전송 버튼 배경 — light gray (Figma #F5F6F8) */
+    val ArNavSendButtonBg = Color(0xFFF5F6F8)
     /** AR 길안내 중앙 턴 배지 (Primary 90%) */
     val ArNavPrimaryBadge90 = Color(0xE61A73E8)
     /** AR 도착 배지 (StatusOpen 90%, Figma #10B981) */
@@ -202,7 +206,7 @@ object ScanPangSpacing {
 object ScanPangDimens {
     val screenHorizontal: Dp = 20.dp
     val headerTopPadding: Dp = 16.dp
-    val bottomBarContainerHeight: Dp = 95.dp
+    val bottomBarContainerHeight: Dp = 80.dp
     val bottomPillHeight: Dp = 62.dp
     /** FAB·라벨 묶음을 위로 띄우는 오프셋 */
     val tabBarFabCenterOffsetUp: Dp = 16.dp
@@ -348,6 +352,8 @@ object ScanPangDimens {
     val arNavPoiOneTop: Dp = 410.dp
     val arNavPoiTwoStart: Dp = 310.dp
     val arNavPoiTwoTop: Dp = 455.dp
+    /** AR 길안내 바텀 패널 고정 높이 (탭바 위 가시 영역, Figma 250dp) */
+    val arNavBottomPanelHeight: Dp = 250.dp
     /** AR 길안내 바텀시트 완전 축소 앵커 높이 */
     val arNavBottomSheetCollapsedHeight: Dp = 148.dp
     /** AR 길안내 바텀시트 기본(resting) 높이 — 드래그 후 가장 자주 유지하고 싶은 값 */
