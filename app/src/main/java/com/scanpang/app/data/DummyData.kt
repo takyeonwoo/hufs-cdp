@@ -22,6 +22,8 @@ data class Place(
     val floor: String = "",
     val website: String = "",
     val parking: String = "",
+    val convenienceServices: String = "",
+    val departments: String = "",
 )
 
 data class MenuItem(
@@ -397,6 +399,7 @@ object DummyData {
             description = "24시간 운영 편의점입니다.",
             tags = listOf("24시간", "ATM", "택배"),
             images = placeholderImage,
+            convenienceServices = "ATM, 택배, 복합기",
         ),
         Place(
             id = "cv2",
@@ -411,6 +414,7 @@ object DummyData {
             description = "24시간 운영 편의점입니다.",
             tags = listOf("24시간", "무인계산대"),
             images = placeholderImage,
+            convenienceServices = "무인계산대, 반값택배",
         ),
     )
 
@@ -497,7 +501,6 @@ object DummyData {
             distance = "250m",
             address = "서울 중구 퇴계로 지하 163",
             phone = "02-6110-4314",
-            openHours = "05:30-24:00",
             isOpen = true,
             description = "4호선 명동역입니다. 6번 출구: 명동 거리. 7번: 남대문·회현. 8번: 남산 케이블카 연결.",
             tags = listOf("4호선", "엘리베이터", "에스컬레이터", "화장실"),
@@ -562,6 +565,7 @@ object DummyData {
             tags = listOf("외국어 가능", "내과", "외과", "응급실"),
             images = placeholderImage,
             website = "emc.ac.kr",
+            departments = "내과, 외과, 응급실",
         ),
     )
 

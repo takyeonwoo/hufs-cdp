@@ -321,6 +321,7 @@ fun DetailTitleBookmarkRow(
     title: String,
     bookmarked: Boolean,
     onBookmarkClick: () -> Unit,
+    trailingContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -334,20 +335,26 @@ fun DetailTitleBookmarkRow(
             color = ScanPangColors.OnSurfaceStrong,
             modifier = Modifier.weight(1f).padding(end = ScanPangSpacing.sm),
         )
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(ScanPangColors.Background)
-                .clickable(onClick = onBookmarkClick),
-            contentAlignment = Alignment.Center,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
         ) {
-            Icon(
-                imageVector = if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
-                contentDescription = if (bookmarked) "저장됨" else "저장",
-                modifier = Modifier.size(20.dp),
-                tint = if (bookmarked) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
-            )
+            trailingContent?.invoke()
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(ScanPangColors.Background)
+                    .clickable(onClick = onBookmarkClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                    contentDescription = if (bookmarked) "저장됨" else "저장",
+                    modifier = Modifier.size(20.dp),
+                    tint = if (bookmarked) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
+                )
+            }
         }
     }
 }

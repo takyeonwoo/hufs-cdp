@@ -1,25 +1,28 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package com.scanpang.app.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Healing
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.LocalParking
+import androidx.compose.material.icons.rounded.MiscellaneousServices
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Star
@@ -44,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.scanpang.app.data.DummyData
 import com.scanpang.app.data.ExchangeRate
-import com.scanpang.app.data.LockerTier
 import com.scanpang.app.data.MenuItem
 import com.scanpang.app.data.Place
 import com.scanpang.app.data.RestaurantPlace
@@ -77,14 +79,15 @@ fun PlaceDetailScreen(
     val restaurantExtra = remember(categoryKey, placeId) {
         if (categoryKey == "restaurant") DummyData.halalRestaurants.firstOrNull { it.place.id == placeId } else null
     }
-    val cafeMenus = remember(categoryKey, placeId) {
-        if (categoryKey == "cafe") DummyData.cafeRepresentativeMenus[placeId].orEmpty() else emptyList()
+    val menuItems = remember(categoryKey, placeId) {
+        when (categoryKey) {
+            "restaurant" -> restaurantExtra?.menuItems.orEmpty()
+            "cafe" -> DummyData.cafeRepresentativeMenus[placeId].orEmpty()
+            else -> emptyList()
+        }
     }
     val exchangeRates = remember(categoryKey) {
         if (categoryKey in setOf("exchange", "atm", "bank")) DummyData.exchangeRates else emptyList()
-    }
-    val lockerTiers = remember(categoryKey, placeId) {
-        if (categoryKey == "locker") DummyData.lockerTiers[placeId].orEmpty() else emptyList()
     }
 
     val hasHeroPhoto = categoryKey !in setOf("atm", "subway", "restroom", "locker")
@@ -137,17 +140,36 @@ fun PlaceDetailScreen(
                 .padding(top = ScanPangSpacing.md, bottom = ScanPangDimens.detailContentBottomPad),
             verticalArrangement = Arrangement.spacedBy(ScanPangDimens.detailSectionSpacing),
         ) {
-            // Title + bookmark
+            // 제목 + (지하철 호선 배지) + 북마크
+            val subwayLine = if (categoryKey == "subway")
+                place.tags.firstOrNull { it.contains("호선") } else null
+            val displayTitle = if (subwayLine != null) "${place.name} $subwayLine" else place.name
             DetailTitleBookmarkRow(
-                title = place.name,
+                title = displayTitle,
                 bookmarked = bookmark.bookmarked,
                 onBookmarkClick = bookmark.onToggle,
+                trailingContent = subwayLine?.let { line ->
+                    {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(ScanPangColors.Primary),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = line.replace("호선", ""),
+                                style = ScanPangType.detailSectionTitle15,
+                                color = Color.White,
+                            )
+                        }
+                    }
+                },
             )
 
-            // Meta row
+            // 메타행
             when (categoryKey) {
                 "restaurant" -> RestaurantMetaRow(place)
-                "subway" -> SubwayLineMetaRow(place)
                 "atm" -> DetailCategoryTagDistanceRow(
                     categoryLabel = place.category,
                     distanceText = place.distance,
@@ -165,20 +187,20 @@ fun PlaceDetailScreen(
                 )
             }
 
-            // Halal trust chips (restaurant only)
+            // 할랄 신뢰 칩 (식당만)
             if (categoryKey == "restaurant" && restaurantExtra != null) {
                 PlaceHalalChipsRow(restaurantExtra)
             }
 
             DetailScreenDivider()
 
-            // Navigation + phone CTA
+            // CTA
             DetailCtaRow(
                 onNavigate = { navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true } },
                 onPhoneClick = { if (place.phone.isNotBlank()) context.openPhoneDialer(place.phone) },
             )
 
-            // Visit status for applicable categories
+            // 오늘 방문 가능 여부 (영업시간이 있는 카테고리만)
             val showVisitStatus = categoryKey in setOf(
                 "restaurant", "cafe", "shopping", "convenience_store", "exchange",
                 "bank", "hospital", "pharmacy", "tourist",
@@ -194,50 +216,43 @@ fun PlaceDetailScreen(
 
             DetailScreenDivider()
 
-            // Category-specific content
-            PlaceCategoryContent(
-                categoryKey = categoryKey,
+            // 본문 — 데이터에 값이 있는 섹션만 자동으로 표시
+            PlaceDetailContent(
                 place = place,
-                restaurantExtra = restaurantExtra,
-                cafeMenus = cafeMenus,
+                menuItems = menuItems,
                 exchangeRates = exchangeRates,
-                lockerTiers = lockerTiers,
             )
         }
     }
 }
 
-// ── Category-specific content ─────────────────────────────────────────────
+// ── 통합 본문 — 카테고리 분기 없이 데이터 유무로 섹션 표시 결정 ────────────
 
 @Composable
-private fun PlaceCategoryContent(
-    categoryKey: String,
+private fun PlaceDetailContent(
     place: Place,
-    restaurantExtra: RestaurantPlace?,
-    cafeMenus: List<MenuItem>,
+    menuItems: List<MenuItem>,
     exchangeRates: List<ExchangeRate>,
-    lockerTiers: List<LockerTier>,
 ) {
-    when (categoryKey) {
-        "restaurant" -> RestaurantContent(place, restaurantExtra)
-        "cafe" -> CafeContent(place, cafeMenus)
-        "exchange" -> ExchangeContent(place, exchangeRates)
-        "atm" -> AtmContent(place, exchangeRates)
-        "subway" -> SubwayContent(place)
-        "locker" -> LockerContent(place, lockerTiers)
-        "restroom" -> RestroomContent(place)
-        "prayer_room" -> PrayerRoomContent(place)
-        "convenience_store" -> ConvenienceStoreContent(place)
-        "shopping" -> ShoppingContent(place)
-        "hospital" -> HospitalContent(place)
-        "pharmacy" -> PharmacyContent(place)
-        "bank" -> BankContent(place)
-        else -> GenericContent(place)
+    // 대표 메뉴 (식당·카페에만 데이터 있음)
+    if (menuItems.isNotEmpty()) {
+        DetailSection(title = "대표 메뉴") {
+            Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
+                menuItems.forEach { m -> DetailMenuPriceRow(name = m.name, price = m.price) }
+            }
+        }
+        DetailScreenDivider()
     }
-}
 
-@Composable
-private fun CommonDetailInfoSection(place: Place) {
+    // 소개
+    if (place.description.isNotBlank()) {
+        DetailSection(title = "소개") {
+            DetailIntroBody(text = place.description)
+        }
+        DetailScreenDivider()
+    }
+
+    // 상세 정보 — Place 필드가 비어있으면 해당 행 자동 생략
     DetailSection(title = "상세 정보") {
         Column(verticalArrangement = Arrangement.spacedBy(INFO_ROW_SPACING)) {
             if (place.openHours.isNotBlank()) DetailInfoLine(Icons.Rounded.AccessTime, "영업시간", place.openHours)
@@ -246,177 +261,24 @@ private fun CommonDetailInfoSection(place: Place) {
             if (place.floor.isNotBlank()) DetailInfoLine(Icons.Rounded.Store, "매장 층수", place.floor)
             if (place.parking.isNotBlank()) DetailInfoLine(Icons.Rounded.LocalParking, "주차 가능 여부", place.parking)
             if (place.website.isNotBlank()) DetailInfoLine(Icons.Rounded.Language, "웹사이트", place.website)
+            if (place.convenienceServices.isNotBlank()) DetailInfoLine(Icons.Rounded.MiscellaneousServices, "편의시설", place.convenienceServices)
+            if (place.departments.isNotBlank()) DetailInfoLine(Icons.Rounded.Healing, "진료과목", place.departments)
         }
     }
-}
 
-@Composable
-private fun RestaurantContent(place: Place, rp: RestaurantPlace?) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    if (rp != null && rp.menuItems.isNotEmpty()) {
-        DetailScreenDivider()
-        DetailSection(title = "대표 메뉴") {
-            Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
-                rp.menuItems.forEach { m -> DetailMenuPriceRow(name = m.name, price = m.price) }
-            }
-        }
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun CafeContent(place: Place, menus: List<MenuItem>) {
-    if (menus.isNotEmpty()) {
-        DetailSection(title = "대표 메뉴") {
-            Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
-                menus.forEach { m -> DetailMenuPriceRow(name = m.name, price = m.price) }
-            }
-        }
-        DetailScreenDivider()
-    }
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun ExchangeContent(place: Place, rates: List<ExchangeRate>) {
-    if (rates.isNotEmpty()) {
-        DetailSection(title = "환율 정보") {
-            Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
-                rates.forEach { row -> ExchangeRateRow(row) }
-            }
-        }
-        DetailScreenDivider()
-    }
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun AtmContent(place: Place, rates: List<ExchangeRate>) {
-    if (place.description.isNotBlank()) {
-        DetailSection(title = "소개") {
-            DetailIntroBody(text = place.description)
-        }
-        DetailScreenDivider()
-    }
-    CommonDetailInfoSection(place)
-    if (rates.isNotEmpty()) {
+    // 환율 (환전소·ATM·은행에만 데이터 있음)
+    if (exchangeRates.isNotEmpty()) {
         DetailScreenDivider()
         DetailSection(title = "오늘의 환율") {
             Column(verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm)) {
-                rates.forEach { row -> ExchangeRateRow(row) }
+                exchangeRates.forEach { row -> ExchangeRateRow(row) }
             }
         }
     }
 }
 
-@Composable
-private fun SubwayContent(place: Place) {
-    if (place.description.isNotBlank()) {
-        DetailSection(title = "소개") {
-            DetailIntroBody(text = place.description)
-        }
-        DetailScreenDivider()
-    }
-    CommonDetailInfoSection(place)
-}
+// ── 섹션 래퍼 ────────────────────────────────────────────────────────────────
 
-@Composable
-private fun LockerContent(place: Place, tiers: List<LockerTier>) {
-    if (place.description.isNotBlank()) {
-        DetailSection(title = "소개") {
-            DetailIntroBody(text = place.description)
-        }
-        DetailScreenDivider()
-    }
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun RestroomContent(place: Place) {
-    if (place.description.isNotBlank()) {
-        DetailSection(title = "소개") {
-            DetailIntroBody(text = place.description)
-        }
-        DetailScreenDivider()
-    }
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun PrayerRoomContent(place: Place) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun ConvenienceStoreContent(place: Place) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun ShoppingContent(place: Place) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun HospitalContent(place: Place) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun PharmacyContent(place: Place) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun BankContent(place: Place) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-@Composable
-private fun GenericContent(place: Place) {
-    DetailSection(title = "소개") {
-        DetailIntroBody(text = place.description)
-    }
-    DetailScreenDivider()
-    CommonDetailInfoSection(place)
-}
-
-// Section = Header + body with consistent inner spacing
 @Composable
 private fun DetailSection(
     title: String,
@@ -428,7 +290,7 @@ private fun DetailSection(
     }
 }
 
-// ── Meta row helpers ──────────────────────────────────────────────────────
+// ── 메타행 헬퍼 ──────────────────────────────────────────────────────────────
 
 @Composable
 private fun RestaurantMetaRow(place: Place) {
@@ -456,37 +318,6 @@ private fun RestaurantMetaRow(place: Place) {
 }
 
 @Composable
-private fun SubwayLineMetaRow(place: Place) {
-    val lineTags = place.tags.filter { it.contains("호선") }
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
-    ) {
-        FlowRow(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
-            verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
-        ) {
-            lineTags.forEach { line ->
-                Surface(shape = ScanPangShapes.badge6, color = ScanPangColors.PrimarySoft) {
-                    Text(
-                        text = line,
-                        modifier = Modifier.padding(
-                            horizontal = ScanPangSpacing.sm,
-                            vertical = ScanPangDimens.chipPadVertical,
-                        ),
-                        style = ScanPangType.chip13SemiBold,
-                        color = ScanPangColors.Primary,
-                    )
-                }
-            }
-        }
-        Text(text = place.distance, style = ScanPangType.detailMetaSubtitle13, color = ScanPangColors.OnSurfaceMuted)
-    }
-}
-
-@Composable
 private fun AtmOperationBadge(place: Place) {
     val is24h = place.openHours.contains("24") || place.tags.any { it.contains("24") }
     Surface(
@@ -502,7 +333,7 @@ private fun AtmOperationBadge(place: Place) {
     }
 }
 
-// ── Restaurant halal chips ─────────────────────────────────────────────────
+// ── 할랄 신뢰 칩 ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun PlaceHalalChipsRow(rp: RestaurantPlace) {
@@ -575,37 +406,7 @@ private fun HalalTrustChip(text: String, icon: ImageVector) {
     }
 }
 
-// ── Locker tier card ──────────────────────────────────────────────────────
-
-@Composable
-private fun LockerTierCard(row: LockerTier) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = ScanPangShapes.detailVisitCard,
-        color = ScanPangColors.DetailMenuRowBackground,
-        border = BorderStroke(ScanPangDimens.borderHairline, ScanPangColors.OutlineSubtle),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(ScanPangSpacing.md),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(ScanPangDimens.icon5)) {
-                Text(text = row.label, style = ScanPangType.title14, color = ScanPangColors.OnSurfaceStrong)
-                Text(text = row.price, style = ScanPangType.detailIntro13, color = ScanPangColors.OnSurfaceMuted)
-            }
-            Text(
-                text = if (row.available) "가용" else "만석",
-                style = ScanPangType.chip13SemiBold,
-                color = if (row.available) ScanPangColors.StatusOpen else ScanPangColors.Error,
-            )
-        }
-    }
-}
-
-// ── Exchange rate row ─────────────────────────────────────────────────────
+// ── 환율 행 ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ExchangeRateRow(row: ExchangeRate) {
