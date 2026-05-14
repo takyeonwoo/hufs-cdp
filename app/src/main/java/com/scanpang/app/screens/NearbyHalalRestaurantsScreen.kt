@@ -48,15 +48,10 @@ import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
-private val filterLabels = listOf(
-    "전체",
-    "HALAL MEAT",
-    "SEAFOOD",
-    "VEGGIE",
-    "SALAM SEOUL",
-)
+private val filterLabels = DummyData.halalFilterLabels
 
 private data class NearbyHalalPlace(
+    val placeId: String,
     val title: String,
     val categoryFilter: String,
     val badgeKind: SearchResultBadgeKind,
@@ -86,6 +81,7 @@ private fun RestaurantPlace.toNearbyHalalPlace(): NearbyHalalPlace {
     }
     val cuisineLabel = place.subCategory.ifBlank { "한식" }
     return NearbyHalalPlace(
+        placeId = place.id,
         title = place.name,
         categoryFilter = halalCategory,
         badgeKind = badgeKind,
@@ -227,7 +223,9 @@ fun NearbyHalalRestaurantsScreen(
                     isOpen = place.isOpen,
                     trustTags = place.trustTags,
                     onClick = {
-                        navController.navigate(AppRoutes.RestaurantDetail) { launchSingleTop = true }
+                        navController.navigate(
+                            AppRoutes.placeDetailRoute("restaurant", place.placeId),
+                        ) { launchSingleTop = true }
                     },
                 )
             }

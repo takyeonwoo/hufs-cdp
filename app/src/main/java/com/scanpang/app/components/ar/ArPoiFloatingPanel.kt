@@ -25,8 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -39,14 +40,13 @@ import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.LocalParking
 import androidx.compose.material.icons.rounded.LocalPhone
 import androidx.compose.material.icons.rounded.OpenInFull
+import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.ShoppingBag
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Stairs
 import androidx.compose.material.icons.rounded.ConfirmationNumber
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -63,8 +63,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.scanpang.app.data.ArFloorSectionUi
+import com.scanpang.app.data.ArFloorStoreLine
+import com.scanpang.app.data.DummyData
+import com.scanpang.app.data.ExchangeRate
+import com.scanpang.app.data.HalalCategory
+import com.scanpang.app.data.StoreDetail
+import com.scanpang.app.data.StoreMenuItem
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangShapes
@@ -92,124 +100,8 @@ private val TrustBadgeBg = Color(0xFF10B981).copy(alpha = 0.07f)
 private val TrustBadgeFg = Color(0xFF065F46)
 private val HoursBg = Color(0xFF10B981).copy(alpha = 0.03f)
 private val MenuItemBg = Color(0xFFF7F8FC)
+private val ExchangeRowBg = Color(0xFFF9FAFB)
 private val DividerColor = Color(0xFFE5E7EB)
-
-// ─── Floor data model ────────────────────────────────────────────────────────
-
-private data class ArFloorStoreLine(
-    val name: String,
-    val category: String,
-    val isHalal: Boolean,
-    val hasDetail: Boolean = false,
-)
-
-private data class ArFloorSectionUi(
-    val label: String,
-    val storeCount: Int,
-    val categoryLabel: String,
-    val stores: List<ArFloorStoreLine>,
-)
-
-private fun noonSquareFloorSections(): List<ArFloorSectionUi> = listOf(
-    ArFloorSectionUi("B2", 6, "식당", emptyList()),
-    ArFloorSectionUi(
-        "B1",
-        15,
-        "식당",
-        listOf(
-            ArFloorStoreLine("무궁화식당", "한식", false, hasDetail = true),
-            ArFloorStoreLine("알리바바 케밥", "할랄", true, hasDetail = true),
-            ArFloorStoreLine("올리브영", "뷰티", false, hasDetail = true),
-        ),
-    ),
-    ArFloorSectionUi("1F", 12, "패션·잡화", emptyList()),
-    ArFloorSectionUi("2F", 10, "뷰티·라이프", emptyList()),
-    ArFloorSectionUi("3F", 9, "패션", emptyList()),
-    ArFloorSectionUi("4F", 7, "잡화", emptyList()),
-    ArFloorSectionUi("5F", 6, "F&B", emptyList()),
-    ArFloorSectionUi("6F", 5, "문화", emptyList()),
-    ArFloorSectionUi("7F", 4, "전망", emptyList()),
-    ArFloorSectionUi("8F", 3, "루프탑", emptyList()),
-)
-
-// ─── Store detail model ───────────────────────────────────────────────────────
-
-data class StoreMenuItem(
-    val name: String,
-    val nameEn: String,
-    val price: String,
-)
-
-data class StoreDetail(
-    val name: String,
-    val nameEn: String,
-    val cuisineLabel: String,
-    val distance: String,
-    val isOpen: Boolean,
-    val openHours: String,
-    val lastOrder: String? = null,
-    val address: String,
-    val phone: String? = null,
-    val description: String,
-    val isHalal: Boolean = false,
-    val showTrustBadges: Boolean = false,
-    val menus: List<StoreMenuItem> = emptyList(),
-    val imageCount: Int = 3,
-)
-
-private val sampleStoreData: Map<String, StoreDetail> = mapOf(
-    "알리바바 케밥" to StoreDetail(
-        name = "알리바바 케밥",
-        nameEn = "Ali Baba Kebab",
-        cuisineLabel = "할랄 · 케밥",
-        distance = "15m",
-        isOpen = true,
-        openHours = "오늘 11:00–22:00",
-        lastOrder = "라스트오더 21:30",
-        address = "서울 중구 명동8길 8-3",
-        phone = "02-318-4221",
-        description = "할랄 인증 케밥 전문점 — 엄격한 기준의 무슬림 친화 레스토랑\n터키식 정통 케밥을 할랄 재료로 즐길 수 있어요.",
-        isHalal = true,
-        showTrustBadges = true,
-        menus = listOf(
-            StoreMenuItem("치킨 케밥", "Chicken Kebab", "₩12,000"),
-            StoreMenuItem("팔라펠 플레이트", "Falafel Plate", "₩10,000"),
-        ),
-    ),
-    "무궁화식당" to StoreDetail(
-        name = "무궁화식당",
-        nameEn = "Mugungwha Restaurant",
-        cuisineLabel = "한식 · 가정식",
-        distance = "20m",
-        isOpen = true,
-        openHours = "오늘 10:00–21:00",
-        lastOrder = "라스트오더 20:30",
-        address = "서울 중구 명동8길 11-4",
-        phone = "02-778-3456",
-        description = "명동 한복판에서 즐기는 정통 한국 가정식.\n비빔밥, 된장찌개 등 다양한 메뉴를 합리적인 가격에 즐길 수 있어요.",
-        isHalal = false,
-        menus = listOf(
-            StoreMenuItem("비빔밥", "Bibimbap", "₩13,000"),
-            StoreMenuItem("된장찌개 정식", "Doenjang Jjigae Set", "₩15,000"),
-        ),
-    ),
-    "올리브영" to StoreDetail(
-        name = "올리브영",
-        nameEn = "Olive Young",
-        cuisineLabel = "뷰티 · 헬스",
-        distance = "25m",
-        isOpen = true,
-        openHours = "오늘 10:00–22:00",
-        address = "서울 중구 명동길 53",
-        phone = "02-778-9900",
-        description = "국내 최대 H&B 스토어.\n K-뷰티 제품부터 건강식품까지 다양한 상품을 만날 수 있어요.",
-        isHalal = false,
-        menus = emptyList(),
-    ),
-)
-
-/** 매장 이름으로 상세 정보 조회. 데이터가 없으면 null 반환. */
-fun storeDetailFor(name: String): StoreDetail? = sampleStoreData[name]
 
 // ─── Building detail overlay ─────────────────────────────────────────────────
 
@@ -221,10 +113,11 @@ fun ArPoiFloatingDetailOverlay(
     onDismiss: () -> Unit,
     onFloorStoreClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    isSaved: Boolean = false,
     onSave: () -> Unit = {},
 ) {
     var expandedFloors by remember { mutableStateOf(setOf("B1")) }
-    val floorData = remember { noonSquareFloorSections() }
+    val floorData = DummyData.noonSquareFloorSections
 
     Box(modifier = modifier.fillMaxSize()) {
         Box(
@@ -255,8 +148,16 @@ fun ArPoiFloatingDetailOverlay(
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "닫기",
+                        tint = ScanPangColors.OnSurfaceMuted,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { onDismiss() },
+                    )
                     Text(
                         text = poiName,
                         style = ScanPangType.profileName18,
@@ -269,14 +170,14 @@ fun ArPoiFloatingDetailOverlay(
                         modifier = Modifier
                             .size(28.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(DetailRowGray)
+                            .background(if (isSaved) ScanPangColors.PrimarySoft else DetailRowGray)
                             .clickable { onSave() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.BookmarkBorder,
+                            imageVector = if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
                             contentDescription = "저장",
-                            tint = ScanPangColors.OnSurfaceMuted,
+                            tint = if (isSaved) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -417,17 +318,23 @@ private fun ArPoiBuildingTabBody() {
             Triple(Icons.Rounded.LocalPhone, "02-778-1234", false),
             Triple(Icons.Rounded.LocalParking, "주차 가능", false),
             Triple(Icons.Rounded.ConfirmationNumber, "무료 입장", false),
-            Triple(Icons.Rounded.Language, "홈페이지", true),
         )
         Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
             gridItems.chunked(2).forEach { row ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    row.forEach { (icon, label, isLink) ->
-                        ArPoiBuildingInfoChip(icon, label, Modifier.weight(1f), if (isLink) ScanPangColors.Primary else ScanPangColors.OnSurfaceStrong, if (isLink) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted)
+                    row.forEach { (icon, label, _) ->
+                        ArPoiBuildingInfoChip(icon, label, Modifier.weight(1f))
                     }
-                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
+            // 홈페이지 — 전체 너비 단독 행
+            ArPoiBuildingInfoChip(
+                icon = Icons.Rounded.Language,
+                text = "홈페이지",
+                modifier = Modifier.fillMaxWidth(),
+                textColor = ScanPangColors.Primary,
+                iconTint = ScanPangColors.Primary,
+            )
         }
 
         Box(modifier = Modifier.fillMaxWidth().height(90.dp).clip(RoundedCornerShape(10.dp))) {
@@ -437,7 +344,10 @@ private fun ArPoiBuildingTabBody() {
                 pageNestedScrollConnection = PagerDefaults.pageNestedScrollConnection(pagerState, Orientation.Horizontal),
             ) { page -> Box(Modifier.fillMaxSize().background(buildingImageBg[page])) }
             Surface(shape = RoundedCornerShape(8.dp), color = Color.Black.copy(alpha = 0.27f), modifier = Modifier.align(Alignment.TopEnd).padding(top = 5.dp, end = 5.dp)) {
-                Text("${currentPage + 1}/$buildingImageCount", modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), style = ScanPangType.badge9SemiBold, color = Color.White)
+                Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Photo, null, tint = Color.White, modifier = Modifier.size(10.dp))
+                    Text("${currentPage + 1}/$buildingImageCount", style = ScanPangType.badge9SemiBold, color = Color.White)
+                }
             }
             Box(modifier = Modifier.align(Alignment.TopStart).padding(top = 5.dp, start = 5.dp).size(20.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.27f)).clickable { fullscreen = true }, contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.OpenInFull, null, tint = Color.White, modifier = Modifier.size(12.dp))
@@ -487,8 +397,10 @@ private fun ArPoiFloorsTabBody(
                 ) {
                     Text(floor.label, style = ScanPangType.title14, color = ScanPangColors.OnSurfaceStrong)
                     Text("${floor.storeCount}개", style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceMuted)
-                    Surface(shape = RoundedCornerShape(10.dp), color = ScanPangColors.PrimarySoft) {
-                        Text(floor.categoryLabel, modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp), style = ScanPangType.badge9SemiBold, color = ScanPangColors.Primary)
+                    floor.categories.forEach { cat ->
+                        Surface(shape = RoundedCornerShape(10.dp), color = ScanPangColors.PrimarySoft) {
+                            Text(cat, modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp), style = ScanPangType.badge9SemiBold, color = ScanPangColors.Primary)
+                        }
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Icon(
@@ -519,15 +431,13 @@ private fun ArPoiFloorsTabBody(
                                 )
                                 Text(store.name, style = ScanPangType.quickLabel12, color = ScanPangColors.OnSurfaceStrong)
                                 Text(store.category, style = ScanPangType.tag10Medium, color = ScanPangColors.OnSurfaceMuted)
-                                if (store.hasDetail) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.ArrowForwardIos,
-                                        contentDescription = "상세보기",
-                                        tint = ScanPangColors.OnSurfacePlaceholder,
-                                        modifier = Modifier.size(10.dp),
-                                    )
-                                }
+                                Spacer(modifier = Modifier.weight(1f))
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = ScanPangColors.OnSurfacePlaceholder,
+                                    modifier = Modifier.size(18.dp),
+                                )
                             }
                         }
                     }
@@ -587,6 +497,7 @@ private fun ArPoiAiPointCard(icon: ImageVector, title: String, subtitle: String)
 @Composable
 fun ArStoreDetailOverlay(
     detail: StoreDetail,
+    isSaved: Boolean = false,
     onDismiss: () -> Unit,
     onStartNavigation: () -> Unit,
     modifier: Modifier = Modifier,
@@ -647,36 +558,39 @@ fun ArStoreDetailOverlay(
                         pageNestedScrollConnection = PagerDefaults.pageNestedScrollConnection(pagerState, Orientation.Horizontal),
                     ) { page -> Box(Modifier.fillMaxSize().background(imageBg.getOrElse(page) { Color(0xFFD9D9D9) })) }
 
-                    // Back button (top-left, ← 뒤로가기)
+                    // Back button — top-left (20×20, 6dp inset)
                     Box(
-                        modifier = Modifier.align(Alignment.TopStart).padding(top = 6.dp, start = 6.dp).size(16.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.27f)).clickable { onDismiss() },
+                        modifier = Modifier.align(Alignment.TopStart).padding(top = 6.dp, start = 6.dp).size(20.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.27f)).clickable { onDismiss() },
                         contentAlignment = Alignment.Center,
                     ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, null, tint = Color.White, modifier = Modifier.size(10.dp)) }
 
-                    // Top-right: count badge + expand btn
-                    Row(
-                        modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    // Expand button — top-right only (20×20)
+                    Box(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 10.dp).size(20.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.27f)).clickable { fullscreen = true },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.OpenInFull, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
+
+                    // Photo count badge — bottom-right (Figma: x=308,y=64 → 10dp right, 9dp bottom)
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 9.dp, end = 10.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Black.copy(alpha = 0.27f),
                     ) {
-                        Surface(shape = RoundedCornerShape(8.dp), color = Color.Black.copy(alpha = 0.27f)) {
-                            Text("${currentPage + 1}/$imageCount", modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), style = ScanPangType.badge9SemiBold, color = Color.White)
+                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Photo, null, tint = Color.White, modifier = Modifier.size(10.dp))
+                            Text("${currentPage + 1}/$imageCount", style = ScanPangType.badge9SemiBold, color = Color.White)
                         }
-                        Box(
-                            modifier = Modifier.size(20.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.27f)).clickable { fullscreen = true },
-                            contentAlignment = Alignment.Center,
-                        ) { Icon(Icons.Rounded.OpenInFull, null, tint = Color.White, modifier = Modifier.size(12.dp)) }
                     }
 
-                    // Dot indicators (bottom-center)
-                    Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // Dot indicators — bottom-center (Figma: y=76, 9dp from bottom)
+                    Row(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 9.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         repeat(imageCount) { i ->
                             Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(if (i == currentPage) Color.White.copy(alpha = 0.93f) else Color.White.copy(alpha = 0.4f)))
                         }
                     }
                 }
 
-                // Info section (scrollable)
+                // ── Info section (scrollable) ──────────────────────────────
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -685,53 +599,61 @@ fun ArStoreDetailOverlay(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    // Header: name + halal cert + bookmark
+                    // ── Header: name + [halal cert] + bookmark ─────────────
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text(detail.name, style = ScanPangType.sectionTitle, color = ScanPangColors.OnSurfaceStrong, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(detail.nameEn, style = ScanPangType.badge9SemiBold.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium), color = ScanPangColors.OnSurfaceMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
+                        Text(detail.name, style = ScanPangType.sectionTitle, color = ScanPangColors.OnSurfaceStrong, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                         if (detail.isHalal) {
-                            Box(
-                                modifier = Modifier.size(28.dp).clip(RoundedCornerShape(14.dp)).background(HalalCertRed),
-                                contentAlignment = Alignment.Center,
-                            ) { Icon(Icons.Rounded.CheckCircle, "할랄 인증", tint = Color.White, modifier = Modifier.size(16.dp)) }
+                            Box(modifier = Modifier.size(28.dp).clip(RoundedCornerShape(14.dp)).background(HalalCertRed), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Rounded.CheckCircle, "할랄 인증", tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
                         }
                         Box(
-                            modifier = Modifier.size(28.dp).clip(RoundedCornerShape(14.dp)).background(DetailRowGray).clickable { onSave() },
+                            modifier = Modifier.size(28.dp).clip(RoundedCornerShape(14.dp))
+                                .background(if (isSaved) ScanPangColors.PrimarySoft else DetailRowGray)
+                                .clickable { onSave() },
                             contentAlignment = Alignment.Center,
-                        ) { Icon(Icons.Rounded.BookmarkBorder, "저장", tint = ScanPangColors.OnSurfaceMuted, modifier = Modifier.size(20.dp)) }
+                        ) {
+                            Icon(
+                                if (isSaved) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+                                "저장",
+                                tint = if (isSaved) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
 
-                    // Meta row: halal badge + cuisine chip + distance + status
+                    // ── Meta row: [halal badge] + category chip + distance + [open status] ──
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        if (detail.isHalal) {
+                        detail.halalCategory?.let { hc ->
                             Row(
                                 modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(HalalBadgeBg).padding(horizontal = 10.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(HalalCertRed))
-                                Text("HALAL MEAT", style = ScanPangType.trust10SemiBold, color = HalalCertRed)
+                                Text(hc.label, style = ScanPangType.trust10SemiBold, color = HalalCertRed)
                             }
                         }
                         Surface(shape = RoundedCornerShape(6.dp), color = ScanPangColors.PrimarySoft) {
                             Text(detail.cuisineLabel, modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp), style = ScanPangType.badge9SemiBold, color = ScanPangColors.Primary)
                         }
                         Text(detail.distance, style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceStrong)
-                        Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(ScanPangColors.Success))
-                        Text("영업 중", style = ScanPangType.meta11SemiBold, color = ScanPangColors.Success)
+                        detail.isOpen?.let { open ->
+                            val statusColor = if (open) ScanPangColors.Success else ScanPangColors.OnSurfaceMuted
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(statusColor))
+                            Text(if (open) "영업 중" else "영업 종료", style = ScanPangType.meta11SemiBold, color = statusColor)
+                        }
                     }
 
-                    // Trust badges (halal only)
+                    // ── Trust badges (halal only) ─────────────────────────
                     if (detail.showTrustBadges) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             StoreDetailTrustChip("무슬림 조리사", Icons.Rounded.Restaurant)
@@ -739,7 +661,7 @@ fun ArStoreDetailOverlay(
                         }
                     }
 
-                    // Description card
+                    // ── Description card ──────────────────────────────────
                     Row(
                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(DetailRowGray).padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
@@ -749,37 +671,35 @@ fun ArStoreDetailOverlay(
                         Text(detail.description, style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceStrong, modifier = Modifier.weight(1f))
                     }
 
-                    // Divider
                     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DividerColor))
 
-                    // Info grid: hours, address, phone
+                    // ── Info grid (조건별 행 표시) ────────────────────────
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Hours row
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(HoursBg).padding(horizontal = 10.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(ScanPangColors.Success))
-                            Icon(Icons.Rounded.AccessTime, null, tint = ScanPangColors.Success, modifier = Modifier.size(12.dp))
-                            Text(detail.openHours, style = ScanPangType.quickLabel12, color = ScanPangColors.OnSurfaceStrong)
-                            detail.lastOrder?.let { Text(it, style = ScanPangType.badge9SemiBold.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium), color = ScanPangColors.OnSurfaceMuted) }
-                        }
-                        // Address
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Rounded.Place, null, tint = ScanPangColors.OnSurfaceMuted, modifier = Modifier.size(12.dp))
-                            Text(detail.address, style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceStrong)
-                        }
-                        // Phone
-                        detail.phone?.let { phone ->
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Rounded.LocalPhone, null, tint = ScanPangColors.OnSurfaceMuted, modifier = Modifier.size(12.dp))
-                                Text(phone, style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceStrong)
+                        detail.openHours?.let { hours ->
+                            val open = detail.isOpen ?: true
+                            val dotColor = if (open) ScanPangColors.Success else ScanPangColors.OnSurfaceMuted
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(HoursBg).padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(dotColor))
+                                Icon(Icons.Rounded.AccessTime, null, tint = dotColor, modifier = Modifier.size(12.dp))
+                                Text(hours, style = ScanPangType.quickLabel12, color = ScanPangColors.OnSurfaceStrong)
+                                detail.lastOrder?.let {
+                                    Text(it, style = ScanPangType.badge9SemiBold.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium), color = ScanPangColors.OnSurfaceMuted)
+                                }
                             }
                         }
+                        detail.address?.let { StoreInfoRow(Icons.Rounded.Place, it) }
+                        detail.phone?.let { StoreInfoRow(Icons.Rounded.LocalPhone, it) }
+                        detail.floor?.let { StoreInfoRow(Icons.Rounded.Stairs, it) }
+                        detail.website?.let { StoreInfoRow(Icons.Rounded.Language, it, textColor = ScanPangColors.Primary) }
+                        detail.convenienceServices?.let { StoreInfoRow(Icons.Rounded.ShoppingBag, it) }
+                        detail.departments?.let { StoreInfoRow(Icons.Rounded.Info, it) }
                     }
 
-                    // Menu section (food stores only)
+                    // ── 대표 메뉴 (식당·카페·할랄) ───────────────────────
                     if (detail.menus.isNotEmpty()) {
                         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DividerColor))
                         Text("대표 메뉴", style = ScanPangType.chip13SemiBold, color = ScanPangColors.OnSurfaceStrong)
@@ -788,21 +708,52 @@ fun ArStoreDetailOverlay(
                                 Row(
                                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MenuItemBg).padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                        Text(menu.name, style = ScanPangType.chip13SemiBold, color = ScanPangColors.OnSurfaceStrong)
-                                        Text(menu.nameEn, style = ScanPangType.badge9SemiBold.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Normal), color = ScanPangColors.OnSurfaceMuted)
-                                    }
+                                    Text(menu.name, style = ScanPangType.chip13SemiBold, color = ScanPangColors.OnSurfaceStrong, modifier = Modifier.weight(1f))
                                     Text(menu.price, style = ScanPangType.chip13SemiBold, color = ScanPangColors.Primary)
                                 }
                             }
                         }
                     }
 
+                    // ── 오늘의 환율 (환전소·은행·ATM) ────────────────────
+                    if (detail.exchangeRates.isNotEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DividerColor))
+                        Text("오늘의 환율", style = ScanPangType.chip13SemiBold, color = ScanPangColors.OnSurfaceStrong)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            detail.exchangeRates.forEach { rate ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(ExchangeRowBg).padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(rate.flag, fontSize = 12.sp)
+                                        Text(rate.currency, style = ScanPangType.quickLabel12, color = ScanPangColors.OnSurfaceStrong)
+                                    }
+                                    Text(rate.rate, style = ScanPangType.meta11Medium, color = ScanPangColors.OnSurfaceStrong)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StoreInfoRow(
+    icon: ImageVector,
+    text: String,
+    textColor: Color = ScanPangColors.OnSurfaceStrong,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(icon, null, tint = ScanPangColors.OnSurfaceMuted, modifier = Modifier.size(12.dp))
+        Text(text, style = ScanPangType.meta11Medium, color = textColor)
     }
 }
 

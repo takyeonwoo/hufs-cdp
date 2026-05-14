@@ -10,26 +10,9 @@ data class SavedPlaceEntry(
     val category: String,
     val distanceLine: String,
     val tags: List<String>,
-    val target: SavedPlaceNavTarget,
+    val categoryKey: String,
     val savedOrder: Long = System.currentTimeMillis(),
 )
-
-enum class SavedPlaceNavTarget {
-    Restaurant,
-    PrayerRoom,
-    TouristSpot,
-    Shopping,
-    ConvenienceStore,
-    Cafe,
-    Atm,
-    Bank,
-    Exchange,
-    Subway,
-    Restroom,
-    Lockers,
-    Hospital,
-    Pharmacy,
-}
 
 class SavedPlacesStore(context: Context) {
 
@@ -49,9 +32,7 @@ class SavedPlacesStore(context: Context) {
                             category = o.getString("category"),
                             distanceLine = o.optString("distanceLine", o.optString("distance", "")),
                             tags = o.optJSONArray("tags")?.toStringList().orEmpty(),
-                            target = parseSavedPlaceNavTarget(
-                                o.optString("target", SavedPlaceNavTarget.Restaurant.name),
-                            ),
+                            categoryKey = parseCategoryKey(o),
                             savedOrder = o.optLong("savedOrder", 0L),
                         ),
                     )
@@ -86,7 +67,7 @@ class SavedPlacesStore(context: Context) {
                     put("category", e.category)
                     put("distanceLine", e.distanceLine)
                     put("tags", JSONArray(e.tags))
-                    put("target", e.target.name)
+                    put("categoryKey", e.categoryKey)
                     put("savedOrder", e.savedOrder)
                 },
             )
@@ -104,6 +85,25 @@ class SavedPlacesStore(context: Context) {
     }
 }
 
-internal fun parseSavedPlaceNavTarget(raw: String): SavedPlaceNavTarget =
-    SavedPlaceNavTarget.entries.firstOrNull { it.name == raw }
-        ?: SavedPlaceNavTarget.Restaurant
+/** Read new categoryKey field; fall back to mapping old SavedPlaceNavTarget enum name for backward compat. */
+private fun parseCategoryKey(o: JSONObject): String {
+    val direct = o.optString("categoryKey", "")
+    if (direct.isNotBlank()) return direct
+    return when (o.optString("target", "")) {
+        "Restaurant" -> "restaurant"
+        "PrayerRoom" -> "prayer_room"
+        "TouristSpot" -> "tourist"
+        "Shopping" -> "shopping"
+        "ConvenienceStore" -> "convenience_store"
+        "Cafe" -> "cafe"
+        "Atm" -> "atm"
+        "Bank" -> "bank"
+        "Exchange" -> "exchange"
+        "Subway" -> "subway"
+        "Restroom" -> "restroom"
+        "Lockers" -> "locker"
+        "Hospital" -> "hospital"
+        "Pharmacy" -> "pharmacy"
+        else -> "restaurant"
+    }
+}

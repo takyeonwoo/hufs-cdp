@@ -43,7 +43,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.scanpang.app.components.RecentlyViewedRow
-import com.scanpang.app.components.toDetailRoute
+import com.scanpang.app.components.recentDetailRoute
+import com.scanpang.app.data.DummyData
 import com.scanpang.app.data.OnboardingPreferences
 import com.scanpang.app.data.RecentlyViewedEntry
 import com.scanpang.app.data.RecentlyViewedStore
@@ -175,7 +176,7 @@ private fun HomeTopSection(
             verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
         ) {
             Text(
-                text = "$greetingLine\n오늘 명동을 탐험해볼까요?",
+                text = "$greetingLine\n오늘 ${DummyData.homeAreaName}을 탐험해볼까요?",
                 style = ScanPangType.homeGreeting,
                 color = ScanPangColors.OnSurfaceStrong,
             )
@@ -190,7 +191,7 @@ private fun HomeTopSection(
                     tint = ScanPangColors.OnSurfaceMuted,
                 )
                 Text(
-                    text = "현재 위치: 명동역 6번 출구 근처",
+                    text = "현재 위치: ${DummyData.currentLocationLabel}",
                     style = ScanPangType.meta13,
                     color = ScanPangColors.OnSurfaceMuted,
                     maxLines = 1,
@@ -260,7 +261,7 @@ private fun HomeTopSection(
             showMore = showMoreRecent,
             onMoreClick = { navController.navigate(AppRoutes.RecentlyViewed) },
             onItemClick = { entry ->
-                navController.navigate(entry.target.toDetailRoute())
+                navController.navigate(recentDetailRoute(entry.categoryKey, entry.id))
             },
         )
     }
@@ -293,14 +294,13 @@ private fun QiblaSummaryCard(onClick: () -> Unit) {
                     tint = ScanPangColors.Primary,
                 )
                 Text(
-                    // 방향·다음 기도 시간은 API 연동 전 까지 하드코딩 유지 — 디자인 시안과 일치.
-                    text = "키블라 방향: 남서 232°",
+                    text = DummyData.qiblaDirectionLabel,
                     style = ScanPangType.title14,
                     color = ScanPangColors.OnSurfaceStrong,
                 )
             }
             Text(
-                text = "다음 기도: Dhuhr 12:15",
+                text = DummyData.nextPrayerLabel,
                 style = ScanPangType.caption12Medium,
                 color = ScanPangColors.OnSurfaceMuted,
             )

@@ -8,6 +8,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,17 +31,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
-import androidx.compose.material.icons.rounded.Cancel
-import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Fullscreen
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.rounded.NearMe
+import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,6 +54,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
@@ -69,7 +66,6 @@ import com.scanpang.app.data.Place
 import com.scanpang.app.data.RecentlyViewedEntry
 import com.scanpang.app.data.RecentlyViewedStore
 import com.scanpang.app.data.SavedPlaceEntry
-import com.scanpang.app.data.SavedPlaceNavTarget
 import com.scanpang.app.data.SavedPlacesStore
 import com.scanpang.app.ui.ScanPangFigmaAssets
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -78,30 +74,7 @@ import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
-/** Coil용 더미 갤러리 — API 연동 시 동일 시그니처로 교체 */
 fun defaultPlaceDetailGallery(): List<String> = ScanPangFigmaAssets.RestaurantDetailGallery
-
-fun Place.detailVisitCardsFromPlace(): List<DetailVisitCardUi> {
-    val statusTitle = if (isOpen) "지금 방문 가능" else "운영 종료"
-    val statusTone = if (isOpen) DetailVisitCardTone.Open else DetailVisitCardTone.Closed
-    val hint = if (description.length > 56) description.take(56) + "…" else description
-    return listOf(
-        DetailVisitCardUi(statusTitle, openHours, statusTone),
-        DetailVisitCardUi("안내", hint.ifBlank { "상세 정보는 매장에 문의해 주세요." }, DetailVisitCardTone.Neutral),
-    )
-}
-
-enum class DetailVisitCardTone {
-    Open,
-    Closed,
-    Neutral,
-}
-
-data class DetailVisitCardUi(
-    val title: String,
-    val subtitle: String,
-    val tone: DetailVisitCardTone,
-)
 
 data class DetailBookmarkController(
     val bookmarked: Boolean,
@@ -122,7 +95,7 @@ fun rememberDetailBookmark(
     category: String,
     distanceLine: String,
     tags: List<String>,
-    target: SavedPlaceNavTarget,
+    categoryKey: String,
 ): DetailBookmarkController {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -130,8 +103,6 @@ fun rememberDetailBookmark(
     val recentlyViewedStore = remember { RecentlyViewedStore(context) }
     var bookmarked by remember(placeId) { mutableStateOf(store.isSaved(placeId)) }
 
-    // 모든 상세 화면이 이 훅을 통해 진입하므로, 여기서 한 번만 방문 기록을 남기면
-    // Home 의 "최근 본 장소" 가 검색이 아닌 실제 상세 진입에만 반응한다.
     LaunchedEffect(placeId) {
         recentlyViewedStore.record(
             RecentlyViewedEntry(
@@ -139,7 +110,7 @@ fun rememberDetailBookmark(
                 name = placeName,
                 category = category,
                 distanceLine = distanceLine,
-                target = target,
+                categoryKey = categoryKey,
             ),
         )
     }
@@ -167,7 +138,7 @@ fun rememberDetailBookmark(
                     category = category,
                     distanceLine = distanceLine,
                     tags = tags,
-                    target = target,
+                    categoryKey = categoryKey,
                 ),
             )
             bookmarked = true
@@ -208,16 +179,21 @@ fun DetailImageFullscreenDialog(
                     contentScale = ContentScale.Fit,
                 )
             }
-            IconButton(
-                onClick = onDismiss,
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
-                    .padding(ScanPangSpacing.sm),
+                    .padding(ScanPangSpacing.md)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.25f))
+                    .clickable(onClick = onDismiss),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
                     contentDescription = "닫기",
+                    modifier = Modifier.size(24.dp),
                     tint = Color.White,
                 )
             }
@@ -253,61 +229,53 @@ fun DetailHeroPhotoPager(
                 contentScale = ContentScale.Crop,
             )
         }
-        IconButton(
-            onClick = onBack,
+        // Back button — black@25% circle with white icon
+        Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
-                .padding(ScanPangSpacing.sm),
+                .padding(start = 20.dp, top = 12.dp)
+                .size(ScanPangDimens.arCircleBtn36)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.25f))
+                .clickable(onClick = onBack),
+            contentAlignment = Alignment.Center,
         ) {
-            Surface(
-                shape = CircleShape,
-                color = ScanPangColors.ArOverlayWhite93,
-                shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "뒤로",
-                    modifier = Modifier.padding(ScanPangSpacing.sm),
-                    tint = ScanPangColors.OnSurfaceStrong,
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = "뒤로",
+                modifier = Modifier.size(24.dp),
+                tint = Color.White,
+            )
+        }
+        // Pager dots
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            repeat(gallery.size) { index ->
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = if (index == pagerState.currentPage) 1f else 0.38f)),
                 )
             }
         }
-        if (onFullscreenClick != null) {
-            IconButton(
-                onClick = onFullscreenClick,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(ScanPangSpacing.sm),
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = ScanPangColors.ArOverlayWhite93,
-                    shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Fullscreen,
-                        contentDescription = "전체 화면",
-                        modifier = Modifier.padding(ScanPangSpacing.sm),
-                        tint = ScanPangColors.OnSurfaceStrong,
-                    )
-                }
-            }
-        }
+        // Page count badge
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(ScanPangSpacing.lg),
+                .padding(end = ScanPangSpacing.lg, bottom = ScanPangSpacing.lg),
             shape = ScanPangShapes.badge6,
-            color = ScanPangColors.DetailImageCountScrim,
+            color = Color.Black.copy(alpha = 0.45f),
         ) {
             Text(
                 text = "${pagerState.currentPage + 1}/${gallery.size}",
-                modifier = Modifier.padding(
-                    horizontal = ScanPangSpacing.sm,
-                    vertical = ScanPangDimens.badgePadVertical,
-                ),
+                modifier = Modifier.padding(horizontal = ScanPangSpacing.sm, vertical = 3.dp),
                 style = ScanPangType.detailImageCount9,
                 color = Color.White,
             )
@@ -315,31 +283,35 @@ fun DetailHeroPhotoPager(
     }
 }
 
+// Back-only header for screens without a hero photo
 @Composable
-fun DetailScrollTopBackRow(
+fun DetailBackOnlyArea(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
+            .background(ScanPangColors.Surface)
             .statusBarsPadding()
-            .padding(ScanPangSpacing.sm),
-        horizontalArrangement = Arrangement.Start,
+            .height(56.dp),
     ) {
-        IconButton(onClick = onBack) {
-            Surface(
-                shape = CircleShape,
-                color = ScanPangColors.ArOverlayWhite93,
-                shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "뒤로",
-                    modifier = Modifier.padding(ScanPangSpacing.sm),
-                    tint = ScanPangColors.OnSurfaceStrong,
-                )
-            }
+        Box(
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .size(ScanPangDimens.arCircleBtn36)
+                .clip(CircleShape)
+                .background(ScanPangColors.Background)
+                .clickable(onClick = onBack)
+                .align(Alignment.CenterStart),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = "뒤로",
+                modifier = Modifier.size(20.dp),
+                tint = ScanPangColors.OnSurfaceStrong,
+            )
         }
     }
 }
@@ -353,40 +325,31 @@ fun DetailTitleBookmarkRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = title,
             style = ScanPangType.detailRestaurantTitle24,
             color = ScanPangColors.OnSurfaceStrong,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).padding(end = ScanPangSpacing.sm),
         )
-        IconButton(onClick = onBookmarkClick) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(ScanPangColors.Background)
+                .clickable(onClick = onBookmarkClick),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(
                 imageVector = if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
                 contentDescription = if (bookmarked) "저장됨" else "저장",
-                tint = if (bookmarked) {
-                    ScanPangColors.Primary
-                } else {
-                    ScanPangColors.OnSurfacePlaceholder
-                },
+                modifier = Modifier.size(20.dp),
+                tint = if (bookmarked) ScanPangColors.Primary else ScanPangColors.OnSurfaceMuted,
             )
         }
     }
-}
-
-@Composable
-fun DetailCategoryDistanceLine(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = text,
-        modifier = modifier,
-        style = ScanPangType.detailMetaSubtitle13,
-        color = ScanPangColors.OnSurfaceMuted,
-    )
 }
 
 @Composable
@@ -394,6 +357,7 @@ fun DetailCategoryTagDistanceRow(
     categoryLabel: String,
     distanceText: String,
     modifier: Modifier = Modifier,
+    isOpen: Boolean? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
@@ -402,16 +366,13 @@ fun DetailCategoryTagDistanceRow(
         horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
     ) {
         Surface(
-            shape = ScanPangShapes.badge6,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
             color = ScanPangColors.PrimarySoft,
         ) {
             Text(
                 text = categoryLabel,
-                modifier = Modifier.padding(
-                    horizontal = ScanPangSpacing.sm,
-                    vertical = ScanPangDimens.chipPadVertical,
-                ),
-                style = ScanPangType.category11SemiBold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                style = ScanPangType.trust10SemiBold,
                 color = ScanPangColors.Primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -422,157 +383,81 @@ fun DetailCategoryTagDistanceRow(
             style = ScanPangType.detailMetaSubtitle13,
             color = ScanPangColors.OnSurfaceMuted,
             maxLines = 1,
-            modifier = Modifier.weight(1f, fill = false),
         )
+        if (isOpen != null) {
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(if (isOpen) ScanPangColors.StatusOpen else ScanPangColors.Error),
+            )
+            Text(
+                text = if (isOpen) "영업 중" else "영업 종료",
+                style = ScanPangType.meta11SemiBold,
+                color = if (isOpen) ScanPangColors.StatusOpen else ScanPangColors.Error,
+                maxLines = 1,
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
         trailing?.invoke()
     }
 }
 
+// CTA row: full-width nav button + phone square button
 @Composable
-fun DetailNavigateWideButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    label: String = "길안내 시작",
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(ScanPangDimens.detailCtaHeight),
-        shape = ScanPangShapes.radius12,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = ScanPangColors.Primary,
-            contentColor = Color.White,
-        ),
-    ) {
-        Text(text = label, style = ScanPangType.body15Medium)
-    }
-}
-
-@Composable
-fun DetailNavigateAndSideIconRow(
+fun DetailCtaRow(
     onNavigate: () -> Unit,
-    sideIcon: ImageVector,
-    sideContentDescription: String,
-    onSideClick: () -> Unit,
+    onPhoneClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Button(
-            onClick = onNavigate,
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .height(ScanPangDimens.detailCtaHeight),
-            shape = ScanPangShapes.radius12,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = ScanPangColors.Primary,
-                contentColor = Color.White,
-            ),
-        ) {
-            Text(text = "길안내 시작", style = ScanPangType.body15Medium)
-        }
-        OutlinedButton(
-            onClick = onSideClick,
-            modifier = Modifier.size(ScanPangDimens.detailCtaSide),
-            shape = ScanPangShapes.radius12,
-            border = BorderStroke(
-                ScanPangDimens.borderHairline,
-                ScanPangColors.OutlineSubtle,
-            ),
-            contentPadding = PaddingValues(),
-        ) {
-            Icon(
-                imageVector = sideIcon,
-                contentDescription = sideContentDescription,
-                tint = ScanPangColors.OnSurfaceStrong,
-            )
-        }
-    }
-}
-
-@Composable
-fun DetailVisitCardsHorizontalPager(
-    cards: List<DetailVisitCardUi>,
-    modifier: Modifier = Modifier,
-) {
-    if (cards.isEmpty()) return
-    val pagerState = rememberPagerState(pageCount = { cards.size })
-    HorizontalPager(
-        state = pagerState,
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = ScanPangDimens.screenHorizontal),
-        pageSpacing = ScanPangSpacing.md,
-    ) { page ->
-        val card = cards[page]
-        val style = when (card.tone) {
-            DetailVisitCardTone.Open -> VisitCardVisual(
-                surface = ScanPangColors.DetailVisitOpenSurface,
-                border = ScanPangColors.DetailVisitOpenBorder,
-                icon = Icons.Rounded.CheckCircle,
-                iconTint = ScanPangColors.StatusOpen,
-            )
-            DetailVisitCardTone.Closed -> VisitCardVisual(
-                surface = ScanPangColors.DetailVisitClosedSurface,
-                border = ScanPangColors.DetailVisitClosedBorder,
-                icon = Icons.Rounded.Cancel,
-                iconTint = ScanPangColors.Error,
-            )
-            DetailVisitCardTone.Neutral -> VisitCardVisual(
-                surface = ScanPangColors.DetailVisitNeutralSurface,
-                border = ScanPangColors.DetailVisitNeutralBorder,
-                icon = Icons.Rounded.Info,
-                iconTint = ScanPangColors.Primary,
-            )
-        }
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(ScanPangDimens.detailVisitPagerCardMinHeight),
-            shape = ScanPangShapes.detailVisitCard,
-            color = style.surface,
-            border = BorderStroke(ScanPangDimens.borderHairline, style.border),
+                .height(ScanPangDimens.detailCtaHeight)
+                .clip(ScanPangShapes.radius14)
+                .background(ScanPangColors.Primary)
+                .clickable(onClick = onNavigate),
+            contentAlignment = Alignment.Center,
         ) {
             Row(
-                modifier = Modifier.padding(ScanPangSpacing.md),
-                horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    imageVector = style.icon,
+                    imageVector = Icons.Rounded.NearMe,
                     contentDescription = null,
-                    tint = style.iconTint,
-                    modifier = Modifier.size(ScanPangDimens.icon18),
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.White,
                 )
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(ScanPangDimens.icon5),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        text = card.title,
-                        style = ScanPangType.title14,
-                        color = ScanPangColors.OnSurfaceStrong,
-                    )
-                    Text(
-                        text = card.subtitle,
-                        style = ScanPangType.caption12Medium,
-                        color = ScanPangColors.OnSurfaceMuted,
-                    )
-                }
+                Text(
+                    text = "길안내 시작",
+                    style = ScanPangType.detailSectionTitle15,
+                    color = Color.White,
+                )
             }
+        }
+        Box(
+            modifier = Modifier
+                .size(ScanPangDimens.detailCtaSide)
+                .clip(ScanPangShapes.radius14)
+                .background(ScanPangColors.Background)
+                .clickable(onClick = onPhoneClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Phone,
+                contentDescription = "전화",
+                modifier = Modifier.size(22.dp),
+                tint = ScanPangColors.OnSurfaceMuted,
+            )
         }
     }
 }
-
-private data class VisitCardVisual(
-    val surface: Color,
-    val border: Color,
-    val icon: ImageVector,
-    val iconTint: Color,
-)
 
 @Composable
 fun DetailSectionHeader(
@@ -609,28 +494,28 @@ fun DetailInfoLine(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(ScanPangDimens.icon18),
+            modifier = Modifier.size(ScanPangDimens.icon16),
             tint = ScanPangColors.OnSurfaceMuted,
         )
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(ScanPangDimens.icon5),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Text(
                 text = label,
-                style = ScanPangType.meta11Medium,
-                color = ScanPangColors.OnSurfacePlaceholder,
+                style = ScanPangType.quickLabel12,
+                color = ScanPangColors.OnSurfaceStrong,
             )
             Text(
                 text = value,
-                style = ScanPangType.detailIntro13,
-                color = ScanPangColors.OnSurfaceStrong,
+                style = ScanPangType.caption12,
+                color = ScanPangColors.OnSurfaceMuted,
             )
         }
     }
@@ -648,9 +533,7 @@ fun DetailFacilityTagRow(
         horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.sm),
     ) {
-        tags.forEach { tag ->
-            DetailFacilityTagChip(text = tag)
-        }
+        tags.forEach { tag -> DetailFacilityTagChip(text = tag) }
     }
 }
 
@@ -686,10 +569,7 @@ fun DetailMenuPriceRow(
             .fillMaxWidth()
             .clip(ScanPangShapes.detailMenuRow)
             .background(ScanPangColors.DetailMenuRowBackground)
-            .padding(
-                horizontal = ScanPangSpacing.md,
-                vertical = ScanPangSpacing.sm,
-            ),
+            .padding(horizontal = ScanPangSpacing.md, vertical = ScanPangSpacing.sm),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -712,6 +592,73 @@ fun DetailScreenDivider() {
 }
 
 @Composable
-fun DetailContentBottomSpacer() {
-    Spacer(modifier = Modifier.height(ScanPangDimens.detailContentBottomPad))
+fun DetailTodayVisitStatus(
+    isOpen: Boolean,
+    openHours: String,
+    lastOrder: String = "",
+    modifier: Modifier = Modifier,
+) {
+    val statusColor = if (isOpen) ScanPangColors.StatusOpen else ScanPangColors.Error
+    val cardBg = if (isOpen) ScanPangColors.DetailVisitOpenSurface else ScanPangColors.DetailVisitClosedSurface
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
+    ) {
+        DetailSectionHeader(title = "오늘 방문 가능 여부")
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = ScanPangShapes.radius12,
+            color = cardBg,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(statusColor),
+                    )
+                    Text(
+                        text = if (isOpen) "지금 영업 중" else "지금 영업 종료",
+                        style = ScanPangType.caption12Medium,
+                        color = statusColor,
+                    )
+                    Text(
+                        text = "·",
+                        style = ScanPangType.caption12Medium,
+                        color = ScanPangColors.OnSurfaceStrong,
+                    )
+                    Text(
+                        text = openHours,
+                        style = ScanPangType.caption12Medium,
+                        color = ScanPangColors.OnSurfaceStrong,
+                    )
+                }
+                if (lastOrder.isNotBlank()) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AccessTime,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = ScanPangColors.OnSurfaceMuted,
+                        )
+                        Text(
+                            text = "라스트오더 $lastOrder",
+                            style = ScanPangType.caption12Medium,
+                            color = ScanPangColors.OnSurfaceMuted,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

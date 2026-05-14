@@ -32,7 +32,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.scanpang.app.components.RecentlyViewedRow
-import com.scanpang.app.components.toDetailRoute
+import com.scanpang.app.components.recentDetailRoute
 import com.scanpang.app.data.RecentlyViewedStore
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -114,7 +114,7 @@ fun RecentlyViewedListScreen(
                     RecentlyViewedRow(
                         entry = entry,
                         onClick = {
-                            navController.navigate(entry.target.toDetailRoute()) {
+                            navController.navigate(recentDetailRoute(entry.categoryKey, entry.id)) {
                                 launchSingleTop = true
                             }
                         },

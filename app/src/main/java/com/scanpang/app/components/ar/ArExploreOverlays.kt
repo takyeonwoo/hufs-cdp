@@ -98,6 +98,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.scanpang.app.data.ArBuildingPoi
+import com.scanpang.app.data.ArBuildingStore
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangShapes
@@ -363,27 +365,6 @@ fun ArPoiCard(
     }
 }
 
-/** 건물 내 개별 매장 — 서버 floor_info[].stores 의 단일 항목에 대응 */
-data class ArBuildingStore(
-    val name: String,
-    val category: String,
-)
-
-/** 건물 층 정보 — 서버 floor_info[] 에 대응 */
-data class ArBuildingFloor(
-    val floor: String,
-    val stores: List<ArBuildingStore>,
-)
-
-/** AR 뷰에 표시되는 건물 POI — 서버 place_info 에 대응 */
-data class ArBuildingPoi(
-    val ufid: String,
-    val name: String,
-    val category: String,
-    val distance: String,
-    val floorInfo: List<ArBuildingFloor>,
-)
-
 /** AR 화면에 실제로 띄우는 핀 — 필터 상태에 따라 건물/매장 모드 전환 */
 sealed class ArPoiPin {
     data class BuildingPin(val building: ArBuildingPoi) : ArPoiPin()
@@ -464,52 +445,6 @@ fun ArCategoryIconBadge(
         }
     }
 }
-
-/**
- * 데모용 건물 샘플 — 서버 place_info + floor_info 구조를 반영.
- * 실제 서비스에서는 /place/query 응답으로 대체된다.
- */
-fun arExploreBuildingSamples(): List<ArBuildingPoi> = listOf(
-    ArBuildingPoi(
-        ufid = "noon_square",
-        name = "눈스퀘어",
-        category = "쇼핑",
-        distance = "10m",
-        floorInfo = listOf(
-            ArBuildingFloor("B1", listOf(
-                ArBuildingStore("스타벅스", "카페"),
-                ArBuildingStore("맥도날드", "식당"),
-                ArBuildingStore("GS25", "편의점"),
-            )),
-            ArBuildingFloor("1F", listOf(
-                ArBuildingStore("나이키", "쇼핑"),
-            )),
-            ArBuildingFloor("2F", listOf(
-                ArBuildingStore("이디야커피", "카페"),
-            )),
-        ),
-    ),
-    ArBuildingPoi(
-        ufid = "lotte_young_plaza",
-        name = "롯데영플라자",
-        category = "쇼핑",
-        distance = "25m",
-        floorInfo = listOf(
-            ArBuildingFloor("1F", listOf(
-                ArBuildingStore("세븐일레븐", "편의점"),
-                ArBuildingStore("올리브영", "쇼핑"),
-            )),
-            ArBuildingFloor("2F", listOf(
-                ArBuildingStore("탐앤탐스", "카페"),
-                ArBuildingStore("버거킹", "식당"),
-            )),
-            ArBuildingFloor("3F", listOf(
-                ArBuildingStore("우리은행", "은행"),
-                ArBuildingStore("우리은행 ATM", "ATM"),
-            )),
-        ),
-    ),
-)
 
 private val ArAgentUserBubbleBlue = Color(0xFF1A73E8)
 private val ArSttMicIdleBlue = Color(0xFF1A73E8)
@@ -598,14 +533,14 @@ fun ArExploreInteractiveChatSection(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = ScanPangDimens.arTopBarHorizontal)
-            .padding(bottom = 4.dp),
+            .padding(bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arChatBubbleGap),
     ) {
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 160.dp),
+                .heightIn(max = 172.dp),
             verticalArrangement = Arrangement.spacedBy(ScanPangDimens.arChatBubbleGap),
         ) {
             itemsIndexed(messages, key = { index, msg -> "$index-${msg.isUser}-${msg.text}" }) { _, msg ->

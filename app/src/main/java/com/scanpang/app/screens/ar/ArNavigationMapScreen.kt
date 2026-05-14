@@ -28,6 +28,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.scanpang.app.data.AppSettingsPreferences
+import com.scanpang.app.data.SavedPlaceEntry
+import com.scanpang.app.data.SavedPlacesStore
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -36,8 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.scanpang.app.components.ar.ArCameraBackdrop
 import com.scanpang.app.components.ar.ArStoreDetailOverlay
-import com.scanpang.app.components.ar.storeDetailFor
 import com.scanpang.app.components.ar.ArNavActionCardCluster
+import com.scanpang.app.data.DummyData
 import com.scanpang.app.components.ar.ArNavAiGuideTabWithTextField
 import com.scanpang.app.components.ar.ArNavArrivedBadge
 import com.scanpang.app.components.ar.ArNavBottomSheet
@@ -82,6 +84,9 @@ fun ArNavigationMapScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    val savedStore = remember { SavedPlacesStore(context) }
+    var savedPoiIds by remember { mutableStateOf(savedStore.getAll().map { it.id }.toSet()) }
+
     var activeTab by remember { mutableStateOf(NAV_TAB_MAP) }
     var navState by remember { mutableStateOf<NavigationUiState>(NavigationSamples.Cruising) }
     var aiQuery by remember { mutableStateOf("") }
@@ -109,8 +114,8 @@ fun ArNavigationMapScreen(
                     ArNavAiGuideTabWithTextField(
                         query = aiQuery,
                         onQueryChange = { aiQuery = it },
-                        userMessage = "눈스퀘어가 뭐야?",
-                        agentMessage = "거의 다 왔어요! 입구는 정면 오른쪽이에요.",
+                        userMessage = DummyData.arNavDemoUserMessage,
+                        agentMessage = DummyData.arNavDemoAgentMessage,
                         placeholder = "무엇이든 물어보세요",
                         isSttListening = navAiSttListening,
                         onMicClick = { navAiSttListening = !navAiSttListening },
@@ -209,6 +214,7 @@ fun ArNavigationMapScreen(
         }
 
         selectedPoi?.let { poi ->
+            val poiSaved = poi in savedPoiIds
             ArPoiFloatingDetailOverlay(
                 poiName = poi,
                 activeDetailTab = activePoiDetailTab,
@@ -219,12 +225,21 @@ fun ArNavigationMapScreen(
                     activePoiDetailTab = ArPoiTabBuilding
                 },
                 onFloorStoreClick = { selectedStore = it },
+                isSaved = poiSaved,
+                onSave = {
+                    if (poiSaved) {
+                        savedStore.remove(poi)
+                    } else {
+                        savedStore.save(navPoiSavedEntry(poi))
+                    }
+                    savedPoiIds = savedStore.getAll().map { it.id }.toSet()
+                },
                 modifier = Modifier.fillMaxSize(),
             )
         }
 
         selectedStore?.let { name ->
-            storeDetailFor(name)?.let { detail ->
+            DummyData.storeDetailFor(name)?.let { detail ->
                 ArStoreDetailOverlay(
                     detail = detail,
                     onDismiss = { selectedStore = null },
@@ -268,6 +283,34 @@ fun ArNavigationMapScreen(
             )
         }
     }
+}
+
+private fun navPoiSavedEntry(poiName: String): SavedPlaceEntry {
+    val (category, categoryKey) = when {
+        poiName.contains("환전") -> "환전소" to "exchange"
+        poiName.contains("쇼핑") || poiName.contains("스퀘어") || poiName.contains("몰") -> "쇼핑" to "shopping"
+        poiName.contains("카페") || poiName.contains("커피") -> "카페" to "cafe"
+        poiName.contains("식당") || poiName.contains("레스토랑") || poiName.contains("찜닭") -> "식당" to "restaurant"
+        poiName.contains("기도") -> "기도실" to "prayer_room"
+        poiName.contains("편의점") -> "편의점" to "convenience_store"
+        poiName.contains("ATM") || poiName.contains("atm") -> "ATM" to "atm"
+        poiName.contains("은행") -> "은행" to "bank"
+        poiName.contains("지하철") || poiName.contains("역") -> "지하철" to "subway"
+        poiName.contains("화장실") -> "화장실" to "restroom"
+        poiName.contains("보관") || poiName.contains("락커") -> "물품보관함" to "locker"
+        poiName.contains("병원") || poiName.contains("의원") -> "병원" to "hospital"
+        poiName.contains("약국") -> "약국" to "pharmacy"
+        else -> "관광지" to "tourist"
+    }
+    return SavedPlaceEntry(
+        id = poiName,
+        name = poiName,
+        category = category,
+        distanceLine = "",
+        tags = emptyList(),
+        categoryKey = categoryKey,
+        savedOrder = System.currentTimeMillis(),
+    )
 }
 
 /**

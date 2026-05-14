@@ -35,7 +35,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import com.scanpang.app.data.RecentlyViewedEntry
-import com.scanpang.app.data.SavedPlaceNavTarget
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
@@ -43,41 +42,28 @@ import com.scanpang.app.ui.theme.ScanPangShapes
 import com.scanpang.app.ui.theme.ScanPangSpacing
 import com.scanpang.app.ui.theme.ScanPangType
 
-/** SavedPlaceNavTarget → 최근 본 장소 행에 쓰는 카테고리 아이콘. */
-fun SavedPlaceNavTarget.toRecentIcon(): ImageVector = when (this) {
-    SavedPlaceNavTarget.Restaurant -> Icons.Rounded.Restaurant
-    SavedPlaceNavTarget.PrayerRoom -> Icons.Rounded.Mosque
-    SavedPlaceNavTarget.TouristSpot -> Icons.Rounded.Whatshot
-    SavedPlaceNavTarget.Shopping -> Icons.Rounded.LocalMall
-    SavedPlaceNavTarget.ConvenienceStore -> Icons.Rounded.LocalConvenienceStore
-    SavedPlaceNavTarget.Cafe -> Icons.Rounded.Coffee
-    SavedPlaceNavTarget.Atm -> Icons.Rounded.Atm
-    SavedPlaceNavTarget.Bank -> Icons.Rounded.AccountBalance
-    SavedPlaceNavTarget.Exchange -> Icons.Rounded.CurrencyExchange
-    SavedPlaceNavTarget.Subway -> Icons.Rounded.Train
-    SavedPlaceNavTarget.Restroom -> Icons.Rounded.Wc
-    SavedPlaceNavTarget.Lockers -> Icons.Rounded.Lock
-    SavedPlaceNavTarget.Hospital -> Icons.Rounded.LocalHospital
-    SavedPlaceNavTarget.Pharmacy -> Icons.Rounded.Medication
+/** categoryKey → 최근 본 장소 행에 쓰는 카테고리 아이콘. */
+fun String.toRecentIcon(): ImageVector = when (this) {
+    "restaurant" -> Icons.Rounded.Restaurant
+    "prayer_room" -> Icons.Rounded.Mosque
+    "tourist", "cultural" -> Icons.Rounded.Whatshot
+    "shopping" -> Icons.Rounded.LocalMall
+    "convenience_store" -> Icons.Rounded.LocalConvenienceStore
+    "cafe" -> Icons.Rounded.Coffee
+    "atm" -> Icons.Rounded.Atm
+    "bank" -> Icons.Rounded.AccountBalance
+    "exchange" -> Icons.Rounded.CurrencyExchange
+    "subway" -> Icons.Rounded.Train
+    "restroom" -> Icons.Rounded.Wc
+    "locker" -> Icons.Rounded.Lock
+    "hospital" -> Icons.Rounded.LocalHospital
+    "pharmacy" -> Icons.Rounded.Medication
+    else -> Icons.Rounded.Whatshot
 }
 
-/** SavedPlaceNavTarget → 해당 상세 화면 라우트. */
-fun SavedPlaceNavTarget.toDetailRoute(): String = when (this) {
-    SavedPlaceNavTarget.Restaurant -> AppRoutes.RestaurantDetail
-    SavedPlaceNavTarget.PrayerRoom -> AppRoutes.PrayerRoomDetail
-    SavedPlaceNavTarget.TouristSpot -> AppRoutes.TouristDetail
-    SavedPlaceNavTarget.Shopping -> AppRoutes.ShoppingDetail
-    SavedPlaceNavTarget.ConvenienceStore -> AppRoutes.ConvenienceDetail
-    SavedPlaceNavTarget.Cafe -> AppRoutes.CafeDetail
-    SavedPlaceNavTarget.Atm -> AppRoutes.AtmDetail
-    SavedPlaceNavTarget.Bank -> AppRoutes.BankDetail
-    SavedPlaceNavTarget.Exchange -> AppRoutes.ExchangeDetail
-    SavedPlaceNavTarget.Subway -> AppRoutes.SubwayDetail
-    SavedPlaceNavTarget.Restroom -> AppRoutes.RestroomDetail
-    SavedPlaceNavTarget.Lockers -> AppRoutes.LockersDetail
-    SavedPlaceNavTarget.Hospital -> AppRoutes.HospitalDetail
-    SavedPlaceNavTarget.Pharmacy -> AppRoutes.PharmacyDetail
-}
+/** categoryKey + placeId → 통합 상세 화면 라우트. */
+fun recentDetailRoute(categoryKey: String, placeId: String): String =
+    AppRoutes.placeDetailRoute(categoryKey, placeId)
 
 /**
  * 최근 본 장소 카드 행 — Home 미리보기/RecentlyViewedListScreen 전체 리스트가 동일하게 사용한다.
@@ -107,7 +93,7 @@ fun RecentlyViewedRow(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                imageVector = entry.target.toRecentIcon(),
+                imageVector = entry.categoryKey.toRecentIcon(),
                 contentDescription = null,
                 modifier = Modifier.size(ScanPangDimens.icon20),
                 tint = ScanPangColors.Primary,

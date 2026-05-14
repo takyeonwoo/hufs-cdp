@@ -42,7 +42,6 @@ import androidx.navigation.NavController
 import com.scanpang.app.components.SavedPlaceCard
 import com.scanpang.app.components.ScanPangFilterChip
 import com.scanpang.app.data.SavedPlaceEntry
-import com.scanpang.app.data.SavedPlaceNavTarget
 import com.scanpang.app.data.SavedPlacesStore
 import com.scanpang.app.navigation.AppRoutes
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -67,7 +66,8 @@ private data class SavedPlaceRow(
     val distanceLine: String,
     val distanceMeters: Int,
     val savedOrder: Long,
-    val navTarget: SavedPlaceNavTarget,
+    val categoryKey: String,
+    val placeId: String,
 )
 
 private fun parseDistanceMeters(line: String): Int {
@@ -92,27 +92,12 @@ private fun SavedPlaceEntry.toUiRow(): SavedPlaceRow = SavedPlaceRow(
     distanceLine = stripCategoryPrefix(distanceLine),
     distanceMeters = parseDistanceMeters(distanceLine),
     savedOrder = savedOrder,
-    navTarget = target,
+    categoryKey = categoryKey,
+    placeId = id,
 )
 
-private fun NavController.navigateToSavedDetail(target: SavedPlaceNavTarget) {
-    val route = when (target) {
-        SavedPlaceNavTarget.Restaurant -> AppRoutes.RestaurantDetail
-        SavedPlaceNavTarget.PrayerRoom -> AppRoutes.PrayerRoomDetail
-        SavedPlaceNavTarget.TouristSpot -> AppRoutes.TouristDetail
-        SavedPlaceNavTarget.Shopping -> AppRoutes.ShoppingDetail
-        SavedPlaceNavTarget.ConvenienceStore -> AppRoutes.ConvenienceDetail
-        SavedPlaceNavTarget.Cafe -> AppRoutes.CafeDetail
-        SavedPlaceNavTarget.Atm -> AppRoutes.AtmDetail
-        SavedPlaceNavTarget.Bank -> AppRoutes.BankDetail
-        SavedPlaceNavTarget.Exchange -> AppRoutes.ExchangeDetail
-        SavedPlaceNavTarget.Subway -> AppRoutes.SubwayDetail
-        SavedPlaceNavTarget.Restroom -> AppRoutes.RestroomDetail
-        SavedPlaceNavTarget.Lockers -> AppRoutes.LockersDetail
-        SavedPlaceNavTarget.Hospital -> AppRoutes.HospitalDetail
-        SavedPlaceNavTarget.Pharmacy -> AppRoutes.PharmacyDetail
-    }
-    navigate(route) { launchSingleTop = true }
+private fun NavController.navigateToSavedDetail(categoryKey: String, placeId: String) {
+    navigate(AppRoutes.placeDetailRoute(categoryKey, placeId)) { launchSingleTop = true }
 }
 
 @Composable
@@ -312,7 +297,7 @@ fun SavedPlacesScreen(
                         title = row.title,
                         categoryLabel = row.categoryLabel,
                         distanceLine = row.distanceLine,
-                        onClick = { navController.navigateToSavedDetail(row.navTarget) },
+                        onClick = { navController.navigateToSavedDetail(row.categoryKey, row.placeId) },
                     )
                 }
             }

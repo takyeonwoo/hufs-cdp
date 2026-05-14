@@ -500,37 +500,37 @@ private fun buildAllSearchRows(query: String): List<ResultRow> = buildList {
                 ResultRow(
                     id = "restaurant:${rp.place.id}",
                     item = rp.toRestaurantResultItem(),
-                    detailRoute = AppRoutes.RestaurantDetail,
+                    detailRoute = AppRoutes.placeDetailRoute("restaurant", rp.place.id),
                 ),
             )
         }
     }
-    fun addPlaces(places: List<Place>, route: String, prefix: String) {
+    fun addPlaces(places: List<Place>) {
         places.forEach { p ->
             if (placeMatchesQuery(p, query)) {
                 add(
                     ResultRow(
-                        id = "$prefix:${p.id}",
+                        id = "${p.categoryKey}:${p.id}",
                         item = p.toGenericResultItem(),
-                        detailRoute = route,
+                        detailRoute = AppRoutes.placeDetailRoute(p.categoryKey, p.id),
                     ),
                 )
             }
         }
     }
-    addPlaces(DummyData.prayerRooms, AppRoutes.PrayerRoomDetail, "prayer")
-    addPlaces(DummyData.cafes, AppRoutes.CafeDetail, "cafe")
-    addPlaces(DummyData.shoppingPlaces, AppRoutes.ShoppingDetail, "shopping")
-    addPlaces(DummyData.convenienceStores, AppRoutes.ConvenienceDetail, "cv")
-    addPlaces(DummyData.atmPlaces, AppRoutes.AtmDetail, "atm")
-    addPlaces(DummyData.bankPlaces, AppRoutes.BankDetail, "bank")
-    addPlaces(DummyData.exchangePlaces, AppRoutes.ExchangeDetail, "ex")
-    addPlaces(DummyData.subwayPlaces, AppRoutes.SubwayDetail, "sub")
-    addPlaces(DummyData.restroomPlaces, AppRoutes.RestroomDetail, "rest")
-    addPlaces(DummyData.lockerPlaces, AppRoutes.LockersDetail, "lock")
-    addPlaces(DummyData.hospitalPlaces, AppRoutes.HospitalDetail, "hosp")
-    addPlaces(DummyData.pharmacyPlaces, AppRoutes.PharmacyDetail, "ph")
-    addPlaces(DummyData.touristPlaces, AppRoutes.TouristDetail, "tour")
+    addPlaces(DummyData.prayerRooms)
+    addPlaces(DummyData.cafes)
+    addPlaces(DummyData.shoppingPlaces)
+    addPlaces(DummyData.convenienceStores)
+    addPlaces(DummyData.atmPlaces)
+    addPlaces(DummyData.bankPlaces)
+    addPlaces(DummyData.exchangePlaces)
+    addPlaces(DummyData.subwayPlaces)
+    addPlaces(DummyData.restroomPlaces)
+    addPlaces(DummyData.lockerPlaces)
+    addPlaces(DummyData.hospitalPlaces)
+    addPlaces(DummyData.pharmacyPlaces)
+    addPlaces(DummyData.touristPlaces)
 }
 
 @Composable

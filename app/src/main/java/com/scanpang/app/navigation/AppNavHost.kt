@@ -22,24 +22,11 @@ import com.scanpang.app.screens.onboarding.OnboardingNameScreen
 import com.scanpang.app.screens.onboarding.OnboardingPreferenceScreen
 import com.scanpang.app.screens.NearbyHalalRestaurantsScreen
 import com.scanpang.app.screens.NearbyPrayerRoomsScreen
-import com.scanpang.app.screens.AtmDetailScreen
-import com.scanpang.app.screens.BankDetailScreen
-import com.scanpang.app.screens.CafeDetailScreen
-import com.scanpang.app.screens.ConvenienceStoreDetailScreen
-import com.scanpang.app.screens.ExchangeDetailScreen
-import com.scanpang.app.screens.HospitalDetailScreen
-import com.scanpang.app.screens.LockersDetailScreen
-import com.scanpang.app.screens.PharmacyDetailScreen
-import com.scanpang.app.screens.PrayerRoomDetailScreen
+import com.scanpang.app.screens.PlaceDetailScreen
 import com.scanpang.app.screens.ProfileScreen
 import com.scanpang.app.screens.QiblaDirectionScreen
 import com.scanpang.app.screens.RecentlyViewedListScreen
-import com.scanpang.app.screens.RestaurantDetailScreen
-import com.scanpang.app.screens.RestroomDetailScreen
 import com.scanpang.app.screens.SavedPlacesScreen
-import com.scanpang.app.screens.ShoppingDetailScreen
-import com.scanpang.app.screens.SubwayDetailScreen
-import com.scanpang.app.screens.TouristSpotDetailScreen
 import com.scanpang.app.screens.SearchDefaultScreen
 import com.scanpang.app.screens.ar.ArExploreScreen
 import com.scanpang.app.screens.ar.ArNavigationMapScreen
@@ -69,20 +56,10 @@ object AppRoutes {
     const val RecentlyViewed = "recently_viewed"
     const val NearbyHalal = "nearby_halal"
     const val NearbyPrayer = "nearby_prayer"
-    const val RestaurantDetail = "restaurant_detail"
-    const val PrayerRoomDetail = "prayer_room_detail"
-    const val TouristDetail = "tourist_detail"
-    const val ShoppingDetail = "shopping_detail"
-    const val ConvenienceDetail = "convenience_detail"
-    const val CafeDetail = "cafe_detail"
-    const val AtmDetail = "atm_detail"
-    const val BankDetail = "bank_detail"
-    const val ExchangeDetail = "exchange_detail"
-    const val SubwayDetail = "subway_detail"
-    const val RestroomDetail = "restroom_detail"
-    const val LockersDetail = "lockers_detail"
-    const val HospitalDetail = "hospital_detail"
-    const val PharmacyDetail = "pharmacy_detail"
+    const val PlaceDetail = "place_detail/{categoryKey}/{placeId}"
+    const val PlaceDetailCategoryKeyArg = "categoryKey"
+    const val PlaceDetailPlaceIdArg = "placeId"
+    fun placeDetailRoute(categoryKey: String, placeId: String) = "place_detail/$categoryKey/$placeId"
     const val ArExplore = "ar_explore"
     const val ArNavMap = "ar_nav_map"
 
@@ -158,47 +135,16 @@ fun AppNavHost(
         composable(AppRoutes.NearbyPrayer) {
             NearbyPrayerRoomsScreen(navController = navController)
         }
-        composable(AppRoutes.RestaurantDetail) {
-            RestaurantDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.PrayerRoomDetail) {
-            PrayerRoomDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.TouristDetail) {
-            TouristSpotDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.ShoppingDetail) {
-            ShoppingDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.ConvenienceDetail) {
-            ConvenienceStoreDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.CafeDetail) {
-            CafeDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.AtmDetail) {
-            AtmDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.BankDetail) {
-            BankDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.ExchangeDetail) {
-            ExchangeDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.SubwayDetail) {
-            SubwayDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.RestroomDetail) {
-            RestroomDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.LockersDetail) {
-            LockersDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.HospitalDetail) {
-            HospitalDetailScreen(navController = navController)
-        }
-        composable(AppRoutes.PharmacyDetail) {
-            PharmacyDetailScreen(navController = navController)
+        composable(
+            route = AppRoutes.PlaceDetail,
+            arguments = listOf(
+                navArgument(AppRoutes.PlaceDetailCategoryKeyArg) { type = NavType.StringType },
+                navArgument(AppRoutes.PlaceDetailPlaceIdArg) { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val categoryKey = entry.arguments?.getString(AppRoutes.PlaceDetailCategoryKeyArg) ?: return@composable
+            val placeId = entry.arguments?.getString(AppRoutes.PlaceDetailPlaceIdArg) ?: return@composable
+            PlaceDetailScreen(navController = navController, categoryKey = categoryKey, placeId = placeId)
         }
         composable(AppRoutes.ArExplore) {
             ArExploreScreen(navController = navController)

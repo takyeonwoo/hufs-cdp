@@ -77,7 +77,7 @@ fun NearbyPrayerRoomsScreen(
     modifier: Modifier = Modifier,
 ) {
     var filterIndex by remember { mutableIntStateOf(0) }
-    val filterLabels = listOf("전체", "거리순", "남녀 분리")
+    val filterLabels = DummyData.prayerRoomFilterLabels
     val prayerPlaces = remember(filterIndex) { prayerRoomsForFilter(filterIndex) }
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -225,7 +225,9 @@ fun NearbyPrayerRoomsScreen(
                     title = place.name,
                     subtitle = "${place.distance} · ${place.address}",
                     onClick = {
-                        navController.navigate(AppRoutes.PrayerRoomDetail) { launchSingleTop = true }
+                        navController.navigate(
+                            AppRoutes.placeDetailRoute("prayer_room", place.id),
+                        ) { launchSingleTop = true }
                     },
                 )
             }

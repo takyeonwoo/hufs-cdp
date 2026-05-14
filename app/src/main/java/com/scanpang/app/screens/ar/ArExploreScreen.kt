@@ -72,7 +72,6 @@ import com.scanpang.app.components.ar.ArCameraBackdrop
 import com.scanpang.app.components.ar.ArCircleIconButton
 import com.scanpang.app.components.ar.ArExploreInteractiveChatSection
 import com.scanpang.app.components.ar.ArStoreDetailOverlay
-import com.scanpang.app.components.ar.storeDetailFor
 import com.scanpang.app.components.ar.ArPoiFloatingDetailOverlay
 import com.scanpang.app.components.ar.ArPoiTabBuilding
 import com.scanpang.app.components.ar.ArExploreFilterPanelFigma
@@ -81,13 +80,15 @@ import com.scanpang.app.components.ar.ArExploreSearchPanelContent
 import com.scanpang.app.components.ar.ArExploreSideColumn
 import com.scanpang.app.components.ar.arExploreCategoryChipSpecs
 import com.scanpang.app.components.ar.ArPoiPin
-import com.scanpang.app.components.ar.arExploreBuildingSamples
 import com.scanpang.app.components.ar.ArPoiPinsLayer
+import com.scanpang.app.data.DummyData
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.scanpang.app.data.AppSettingsPreferences
 import com.scanpang.app.data.OnboardingPreferences
+import com.scanpang.app.data.SavedPlaceEntry
+import com.scanpang.app.data.SavedPlacesStore
 import com.scanpang.app.data.SearchHistoryPreferences
 import com.scanpang.app.data.ValueAdded
 import com.scanpang.app.navigation.AppRoutes
@@ -114,16 +115,7 @@ fun ArExploreScreen(
     var chatInput by remember { mutableStateOf("") }
     var chatMessages by remember {
         mutableStateOf(
-            listOf(
-                ArAgentChatMessage(
-                    text = "안녕하세요! 스캔팡입니다. 주변 장소를 AR로 안내해 드릴게요.",
-                    isUser = false,
-                ),
-                ArAgentChatMessage(
-                    text = "아미나님, 오늘은 어떤 할랄 맛집을 찾으세요?",
-                    isUser = true,
-                ),
-            ),
+            DummyData.arExploreDemoChatMessages.map { ArAgentChatMessage(text = it.text, isUser = it.isUser) },
         )
     }
 
@@ -228,12 +220,15 @@ fun ArExploreScreen(
         pendingMicAfterPermission = false
     }
 
+    val savedStore = remember { SavedPlacesStore(context) }
+    var savedPoiIds by remember { mutableStateOf(savedStore.getAll().map { it.id }.toSet()) }
+
     var selectedPoi by remember { mutableStateOf<String?>(null) }
     var activeDetailTab by remember { mutableStateOf(ArPoiTabBuilding) }
     var selectedStore by remember { mutableStateOf<String?>(null) }
 
     val categoryChipSpecs = remember { arExploreCategoryChipSpecs() }
-    val buildingSamples = remember { arExploreBuildingSamples() }
+    val buildingSamples = DummyData.arBuildingPois
     // 필터 미선택: 건물 핀 / 필터 선택: 건물별 해당 카테고리 매장 1개 핀
     val visiblePins = remember(categorySelection) {
         if (categorySelection.isEmpty()) {
@@ -248,13 +243,14 @@ fun ArExploreScreen(
         }
     }
     val arExploreDemoHits = remember(isHalalUser) {
-        listOf(
-            ArExploreSearchHitUi("알리바바 케밥", "식당", "52m", if (isHalalUser) "할랄 인증" else null),
-            ArExploreSearchHitUi("할랄가든 명동점", "식당", "120m", if (isHalalUser) "할랄 인증" else null),
-            ArExploreSearchHitUi("명동성당", "관광지", "350m", null),
-            ArExploreSearchHitUi("우리은행 환전소", "환전", "80m", null),
-            ArExploreSearchHitUi("세븐일레븐 명동점", "편의점", "30m", null),
-        )
+        DummyData.arExploreDemoHits.map { hit ->
+            ArExploreSearchHitUi(
+                hit.name,
+                hit.category,
+                hit.distance,
+                if (isHalalUser && hit.isHalal) "할랄 인증" else null,
+            )
+        }
     }
     val arRecentQueries = remember(arSearchHistoryTick, isSearchOpen) {
         if (isSearchOpen) searchHistoryPrefs.getRecent() else emptyList()
@@ -360,9 +356,17 @@ fun ArExploreScreen(
                 ArPoiPinsLayer(
                     pins = visiblePins,
                     onPinClick = { pin ->
-                        selectedPoi = pin.buildingName
-                        activeDetailTab = ArPoiTabBuilding
-                        selectedStore = null
+                        when (pin) {
+                            is com.scanpang.app.components.ar.ArPoiPin.BuildingPin -> {
+                                selectedPoi = pin.building.name
+                                activeDetailTab = ArPoiTabBuilding
+                                selectedStore = null
+                            }
+                            is com.scanpang.app.components.ar.ArPoiPin.StorePin -> {
+                                selectedStore = pin.store.name
+                                selectedPoi = null
+                            }
+                        }
                     },
                 )
                 ArExploreSideColumn(
@@ -550,6 +554,7 @@ fun ArExploreScreen(
             }
 
             selectedPoi?.let { poi ->
+                val poiSaved = poi in savedPoiIds
                 ArPoiFloatingDetailOverlay(
                     poiName = poi,
                     activeDetailTab = activeDetailTab,
@@ -560,25 +565,30 @@ fun ArExploreScreen(
                         activeDetailTab = ArPoiTabBuilding
                     },
                     onFloorStoreClick = { selectedStore = it },
+                    isSaved = poiSaved,
                     onSave = {
-                        scope.launch { snackbarHostState.showSnackbar("저장되었습니다") }
+                        if (poiSaved) {
+                            savedStore.remove(poi)
+                        } else {
+                            savedStore.save(poiSavedEntry(poi))
+                        }
+                        savedPoiIds = savedStore.getAll().map { it.id }.toSet()
                     },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
 
             selectedStore?.let { name ->
-                storeDetailFor(name)?.let { detail ->
-                    ArStoreDetailOverlay(
-                        detail = detail,
-                        onDismiss = { selectedStore = null },
-                        onStartNavigation = {
-                            navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
-                            selectedStore = null
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                val storeDetail = DummyData.storeDetailOrFallback(name, "매장")
+                ArStoreDetailOverlay(
+                    detail = storeDetail,
+                    onDismiss = { selectedStore = null },
+                    onStartNavigation = {
+                        navController.navigate(AppRoutes.ArNavMap) { launchSingleTop = true }
+                        selectedStore = null
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
@@ -719,5 +729,33 @@ private fun filterArExploreHits(query: String, all: List<ArExploreSearchHitUi>):
             hit.badgeLabel?.lowercase()?.contains(t) == true
     }
     return filtered.ifEmpty { all }
+}
+
+private fun poiSavedEntry(poiName: String): SavedPlaceEntry {
+    val (category, categoryKey) = when {
+        poiName.contains("환전") -> "환전소" to "exchange"
+        poiName.contains("쇼핑") || poiName.contains("스퀘어") || poiName.contains("몰") -> "쇼핑" to "shopping"
+        poiName.contains("카페") || poiName.contains("커피") -> "카페" to "cafe"
+        poiName.contains("식당") || poiName.contains("레스토랑") || poiName.contains("찜닭") -> "식당" to "restaurant"
+        poiName.contains("기도") || poiName.contains("mosque") -> "기도실" to "prayer_room"
+        poiName.contains("편의점") || poiName.contains("세븐") || poiName.contains("GS") || poiName.contains("CU") -> "편의점" to "convenience_store"
+        poiName.contains("ATM") || poiName.contains("atm") -> "ATM" to "atm"
+        poiName.contains("은행") -> "은행" to "bank"
+        poiName.contains("지하철") || poiName.contains("역") -> "지하철" to "subway"
+        poiName.contains("화장실") -> "화장실" to "restroom"
+        poiName.contains("보관") || poiName.contains("락커") -> "물품보관함" to "locker"
+        poiName.contains("병원") || poiName.contains("의원") -> "병원" to "hospital"
+        poiName.contains("약국") -> "약국" to "pharmacy"
+        else -> "관광지" to "tourist"
+    }
+    return SavedPlaceEntry(
+        id = poiName,
+        name = poiName,
+        category = category,
+        distanceLine = "",
+        tags = emptyList(),
+        categoryKey = categoryKey,
+        savedOrder = System.currentTimeMillis(),
+    )
 }
 
