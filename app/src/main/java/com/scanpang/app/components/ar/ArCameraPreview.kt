@@ -3,6 +3,7 @@ package com.scanpang.app.components.ar
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -19,9 +20,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.Image
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.scanpang.app.ui.theme.ScanPangColors
@@ -48,6 +52,7 @@ private suspend fun Context.awaitProcessCameraProvider(): ProcessCameraProvider 
 @Composable
 fun ScanPangCameraPreview(
     lifecycleOwner: LifecycleOwner,
+    isFrozen: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -57,6 +62,7 @@ fun ScanPangCameraPreview(
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
     }
+    var frozenBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(lifecycleOwner, previewView) {
         val provider = runCatching { context.awaitProcessCameraProvider() }.getOrNull()
@@ -82,15 +88,30 @@ fun ScanPangCameraPreview(
         }
     }
 
-    AndroidView(
-        factory = { previewView },
-        modifier = modifier,
-    )
+    // freeze 전환 시 현재 프레임 캡처 / 해제
+    LaunchedEffect(isFrozen) {
+        frozenBitmap = if (isFrozen) previewView.bitmap else null
+    }
+
+    Box(modifier = modifier) {
+        // 카메라는 항상 살아 있음 — 언프리즈 시 즉시 live 복귀
+        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+        // freeze 상태이고 캡처 성공 시 captured 프레임을 위에 덮음
+        val bitmap = frozenBitmap
+        if (isFrozen && bitmap != null) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
 }
 
 @Composable
 fun ArCameraBackdrop(
-    showFreezeTint: Boolean,
+    isFrozen: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -115,6 +136,7 @@ fun ArCameraBackdrop(
         if (cameraGranted) {
             ScanPangCameraPreview(
                 lifecycleOwner = lifecycleOwner,
+                isFrozen = isFrozen,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
@@ -124,7 +146,7 @@ fun ArCameraBackdrop(
                     .background(ScanPangColors.Background),
             )
         }
-        if (showFreezeTint) {
+        if (isFrozen) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

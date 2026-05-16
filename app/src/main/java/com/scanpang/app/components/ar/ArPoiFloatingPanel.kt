@@ -26,12 +26,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.Accessible
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.BookmarkBorder
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ConfirmationNumber
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Info
@@ -43,10 +45,11 @@ import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Restaurant
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.ShoppingBag
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Stairs
-import androidx.compose.material.icons.rounded.ConfirmationNumber
+import androidx.compose.material.icons.rounded.Wc
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -550,6 +553,7 @@ fun ArStoreDetailOverlay(
             shadowElevation = ScanPangDimens.arPoiCardShadowElevation,
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                if (imageCount > 0) {
                 // Photo carousel (h=90)
                 Box(
                     modifier = Modifier
@@ -592,6 +596,18 @@ fun ArStoreDetailOverlay(
                         repeat(imageCount) { i ->
                             Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(if (i == currentPage) Color.White.copy(alpha = 0.93f) else Color.White.copy(alpha = 0.4f)))
                         }
+                    }
+                }
+                } else {
+                    // 사진 없는 경우 (화장실 등) — 뒤로 버튼만 표시
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Box(
+                            modifier = Modifier.size(20.dp).clip(RoundedCornerShape(8.dp)).background(DetailRowGray).clickable { onDismiss() },
+                            contentAlignment = Alignment.Center,
+                        ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, null, tint = ScanPangColors.OnSurfaceMuted, modifier = Modifier.size(10.dp)) }
                     }
                 }
 
@@ -699,9 +715,18 @@ fun ArStoreDetailOverlay(
                         detail.address?.let { StoreInfoRow(Icons.Rounded.Place, it) }
                         detail.phone?.let { StoreInfoRow(Icons.Rounded.LocalPhone, it) }
                         detail.floor?.let { StoreInfoRow(Icons.Rounded.Stairs, it) }
+                        val toiletStr = buildList {
+                            if (!detail.toiletMale.isNullOrBlank()) add("남성 ${detail.toiletMale}칸")
+                            if (!detail.toiletFemale.isNullOrBlank()) add("여성 ${detail.toiletFemale}칸")
+                        }.joinToString(", ")
+                        if (toiletStr.isNotBlank()) StoreInfoRow(Icons.Rounded.Wc, toiletStr)
+                        detail.facilityTags?.let { StoreInfoRow(Icons.AutoMirrored.Rounded.Accessible, it) }
+                        detail.safetyTags?.let { StoreInfoRow(Icons.Rounded.Security, it) }
                         detail.website?.let { StoreInfoRow(Icons.Rounded.Language, it, textColor = ScanPangColors.Primary) }
                         detail.convenienceServices?.let { StoreInfoRow(Icons.Rounded.ShoppingBag, it) }
                         detail.departments?.let { StoreInfoRow(Icons.Rounded.Info, it) }
+                        detail.subwayScheduleUp?.let { StoreInfoRow(Icons.Rounded.AccessTime, it) }
+                        detail.subwayScheduleDown?.let { StoreInfoRow(Icons.Rounded.AccessTime, it) }
                     }
 
                     // ── 대표 메뉴 (식당·카페·할랄) ───────────────────────

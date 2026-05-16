@@ -2,6 +2,7 @@ package com.scanpang.app.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +17,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Help
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Mail
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.PersonRemove
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,7 +54,6 @@ import com.scanpang.app.components.auth.LogoutConfirmDialog
 import com.scanpang.app.data.AppSettingsPreferences
 import com.scanpang.app.data.OnboardingPreferences
 import com.scanpang.app.navigation.AppRoutes
-import com.scanpang.app.ui.ScanPangFigmaAssets
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangShapes
@@ -73,20 +76,21 @@ fun ProfileScreen(
     var languageCode by remember { mutableStateOf(onboardingPrefs.getLanguageCode()) }
     var valueAdded by remember { mutableStateOf(onboardingPrefs.getValueAdded()) }
     var ttsEnabled by remember { mutableStateOf(appSettingsPrefs.isTtsEnabled()) }
+    var displayName by remember { mutableStateOf(onboardingPrefs.getDisplayName().orEmpty().trim()) }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 languageCode = onboardingPrefs.getLanguageCode()
                 valueAdded = onboardingPrefs.getValueAdded()
                 ttsEnabled = appSettingsPrefs.isTtsEnabled()
+                displayName = onboardingPrefs.getDisplayName().orEmpty().trim()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val savedName = onboardingPrefs.getDisplayName().orEmpty().trim()
-    val profileName = if (savedName.isNotEmpty()) savedName else "여행자"
+    val profileName = if (displayName.isNotEmpty()) displayName else "여행자"
     val langLabel = OnboardingPreferences.languageDisplayLabel(languageCode)
     val valueAddedShort = OnboardingPreferences.valueAddedShortLabel(valueAdded)
 
@@ -126,6 +130,9 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(ScanPangSpacing.md),
                 ) {
                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { navController.navigate(AppRoutes.ProfileEdit) },
                         horizontalArrangement = Arrangement.spacedBy(ScanPangSpacing.lg),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -134,22 +141,39 @@ fun ProfileScreen(
                                 .size(ScanPangDimens.profileAvatar)
                                 .clip(CircleShape)
                                 .background(ScanPangColors.Background),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(ScanPangFigmaAssets.ProfileAvatar)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                            val photoUri = onboardingPrefs.getProfilePhotoUri()
+                            if (photoUri != null) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(photoUri)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Rounded.AccountCircle,
+                                    contentDescription = null,
+                                    tint = ScanPangColors.OnSurfacePlaceholder,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
                         }
-                        // Figma: 아바타 우측엔 이름만. 서브타이틀(할랄 · 한국어) 은 제거됨 — 아래 pill 행과 정보가 중복돼서.
                         Text(
                             text = profileName,
                             style = ScanPangType.profileName18,
                             color = ScanPangColors.OnSurfaceStrong,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Icon(
+                            imageVector = Icons.Rounded.ChevronRight,
+                            contentDescription = "프로필 편집",
+                            tint = ScanPangColors.OnSurfacePlaceholder,
+                            modifier = Modifier.size(ScanPangDimens.tabIcon),
                         )
                     }
                     // 부가가치 pill(할랄/비건/일반) + 언어 pill(한국어/English) 두 개만 노출.

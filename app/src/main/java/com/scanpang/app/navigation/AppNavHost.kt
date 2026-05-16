@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.scanpang.app.screens.HomeScreen
+import com.scanpang.app.screens.ProfileEditScreen
 import com.scanpang.app.screens.SplashScreen
 import com.scanpang.app.screens.auth.LoginErrorScreen
 import com.scanpang.app.screens.auth.LoginScreen
@@ -69,6 +70,7 @@ object AppRoutes {
     const val SettingsLanguage = "settings_language"
     const val SettingsValueAdded = "settings_value_added"
     const val SettingsNotification = "settings_notification"
+    const val ProfileEdit = "profile_edit"
 
     const val Login = "login"
     const val TermsAgreement = "terms_agreement"
@@ -163,6 +165,9 @@ fun AppNavHost(
         ) { entry ->
             val destination = entry.arguments?.getString(AppRoutes.ArNavMapDestinationArg)
             ArNavigationMapScreen(navController = navController, destinationName = destination)
+        }
+        composable(AppRoutes.ProfileEdit) {
+            ProfileEditScreen(navController = navController)
         }
         composable(AppRoutes.SettingsLanguage) {
             LanguageSettingsScreen(navController = navController)

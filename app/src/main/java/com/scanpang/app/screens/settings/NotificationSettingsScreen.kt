@@ -36,6 +36,8 @@ import com.scanpang.app.components.ProfileSettingsToggleRow
 import com.scanpang.app.data.AppSettingsPreferences
 import com.scanpang.app.data.OnboardingPreferences
 import com.scanpang.app.data.ValueAdded
+import com.scanpang.app.notification.PrayerAlarmScheduler
+import com.scanpang.app.qibla.getPrayerTimes
 import com.scanpang.app.ui.theme.ScanPangColors
 import com.scanpang.app.ui.theme.ScanPangDimens
 import com.scanpang.app.ui.theme.ScanPangSpacing
@@ -113,6 +115,11 @@ fun NotificationSettingsScreen(
                             onCheckedChange = {
                                 pushEnabled = it
                                 prefs.setPushEnabled(it)
+                                if (it && prayerAlarmEnabled) {
+                                    PrayerAlarmScheduler.schedule(context, getPrayerTimes().todaySchedule)
+                                } else if (!it) {
+                                    PrayerAlarmScheduler.cancelAll(context)
+                                }
                             },
                             showDividerBelow = false,
                         )
@@ -132,6 +139,11 @@ fun NotificationSettingsScreen(
                                 onCheckedChange = {
                                     prayerAlarmEnabled = it
                                     prefs.setPrayerAlarmEnabled(it)
+                                    if (it && pushEnabled) {
+                                        PrayerAlarmScheduler.schedule(context, getPrayerTimes().todaySchedule)
+                                    } else if (!it) {
+                                        PrayerAlarmScheduler.cancelAll(context)
+                                    }
                                 },
                                 showDividerBelow = true,
                             )

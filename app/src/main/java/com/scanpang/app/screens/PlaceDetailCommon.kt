@@ -416,6 +416,7 @@ fun DetailCtaRow(
     onNavigate: () -> Unit,
     onPhoneClick: () -> Unit,
     modifier: Modifier = Modifier,
+    hasPhone: Boolean = true,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -448,20 +449,22 @@ fun DetailCtaRow(
                 )
             }
         }
-        Box(
-            modifier = Modifier
-                .size(ScanPangDimens.detailCtaSide)
-                .clip(ScanPangShapes.radius14)
-                .background(ScanPangColors.Background)
-                .clickable(onClick = onPhoneClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Phone,
-                contentDescription = "전화",
-                modifier = Modifier.size(22.dp),
-                tint = ScanPangColors.OnSurfaceMuted,
-            )
+        if (hasPhone) {
+            Box(
+                modifier = Modifier
+                    .size(ScanPangDimens.detailCtaSide)
+                    .clip(ScanPangShapes.radius14)
+                    .background(ScanPangColors.Background)
+                    .clickable(onClick = onPhoneClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Phone,
+                    contentDescription = "전화",
+                    modifier = Modifier.size(22.dp),
+                    tint = ScanPangColors.OnSurfaceMuted,
+                )
+            }
         }
     }
 }

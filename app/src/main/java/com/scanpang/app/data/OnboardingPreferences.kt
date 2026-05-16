@@ -37,6 +37,12 @@ class OnboardingPreferences(context: Context) {
         prefs.edit().putString(KEY_DISPLAY_NAME, name.trim()).apply()
     }
 
+    fun getProfilePhotoUri(): String? = prefs.getString(KEY_PROFILE_PHOTO_URI, null)?.takeIf { it.isNotBlank() }
+
+    fun setProfilePhotoUri(uri: String?) {
+        prefs.edit().putString(KEY_PROFILE_PHOTO_URI, uri).apply()
+    }
+
     /**
      * 온보딩에서 고른 부가가치(ValueAdded) 를 enum 으로 반환. 미설정 시 null.
      * UI 측은 보통 `?: ValueAdded.GENERAL` 로 기본 분기를 잡으면 된다.
@@ -62,6 +68,7 @@ class OnboardingPreferences(context: Context) {
         const val KEY_LANGUAGE = "preferred_language"
         const val KEY_DISPLAY_NAME = "display_name"
         const val KEY_VALUE_ADDED = "value_added"
+        const val KEY_PROFILE_PHOTO_URI = "profile_photo_uri"
 
         const val LANG_KO = "ko"
         const val LANG_EN = "en"

@@ -105,9 +105,10 @@ fun ArNavigationMapScreen(
     var selectedStore by remember { mutableStateOf<String?>(null) }
     var showStopNavSheet by remember { mutableStateOf(false) }
     var showStopConfirmDialog by remember { mutableStateOf(false) }
+    var isFrozen by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
-        ArCameraBackdrop(showFreezeTint = false, modifier = Modifier.fillMaxSize())
+        ArCameraBackdrop(isFrozen = isFrozen, modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier
@@ -166,7 +167,8 @@ fun ArNavigationMapScreen(
 
         ArNavTopHud(
             modifier = Modifier.align(Alignment.TopStart),
-            onCameraClick = { },
+            onCameraClick = { isFrozen = !isFrozen },
+            isCameraFrozen = isFrozen,
             onSearchClick = {
                 navController.navigate(AppRoutes.ArExplore) { launchSingleTop = true }
             },

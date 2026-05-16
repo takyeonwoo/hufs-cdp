@@ -1,20 +1,36 @@
 # ScanPang API 명세서
 
-**Base URL:** `https://api.scanpang.com/v1`  
-**인증:** 모든 요청 헤더에 `Authorization: Bearer {access_token}` 포함  
-**Content-Type:** `application/json`
+> 작성일: 2026-05-17  
+> 현재 앱은 `DummyData.kt` / `QiblaDataProviders.kt`의 하드코딩 값을 사용.  
+> 아래 명세대로 API를 붙이면 각 파일의 TODO 주석 위치만 교체하면 됨.
 
 ---
 
-## 공통 응답 형식
+## 공통
+
+| 항목 | 내용 |
+|---|---|
+| Base URL | `https://api.scanpang.com/v1` |
+| 인증 방식 | Bearer Token (`Authorization: Bearer {token}` 헤더) |
+| 응답 형식 | `Content-Type: application/json` |
+| 언어 파라미터 | `Accept-Language: ko` or `en` (헤더) |
+
+### 공통 에러 응답
 
 ```json
-// 성공
-{ "success": true, "data": { ... } }
-
-// 실패
-{ "success": false, "error": { "code": "PLACE_NOT_FOUND", "message": "..." } }
+{
+  "code": "ERROR_CODE",
+  "message": "에러 설명"
+}
 ```
+
+| HTTP 코드 | 의미 |
+|---|---|
+| 400 | 잘못된 요청 |
+| 401 | 인증 필요 / 토큰 만료 |
+| 403 | 권한 없음 |
+| 404 | 리소스 없음 |
+| 500 | 서버 에러 |
 
 ---
 
@@ -435,9 +451,130 @@ Response 204 (No Content)
 
 ---
 
-## 9. AR 탐색 / 길안내
+## 9. 지하철 상세
 
-### 9.1 주변 POI 조회 (AR 탐색용)
+> `GET /places/{id}`에서 `category_key: subway`일 때 아래 필드가 추가로 포함됨.  
+> 코드 위치: `PlaceDetailScreen.kt` → `SubwayExitsSection`, `SubwayScheduleSection`, `SubwayFastAlightsSection`  
+> 데이터 클래스: `SubwayDetail`, `SubwayExit`, `SubwayScheduleDir`, `SubwayFastAlight`
+
+```json
+// GET /places/sub1 응답 내 subway 추가 필드
+{
+  "subway_line": "4호선",
+  "exit_count": 10,
+  "exits": [
+    { "exit_no": "1", "facilities": ["남산돈가스거리", "대한적십자사"] },
+    { "exit_no": "6", "facilities": ["명동 거리", "눈스퀘어"] }
+  ],
+  "schedule_up": {
+    "toward": "불암산(당고개)",
+    "first": "00:01",
+    "last":  "20:57"
+  },
+  "schedule_down": {
+    "toward": "오이도",
+    "first": "00:00",
+    "last":  "20:50"
+  },
+  "fast_alights": [
+    {
+      "direction": "회현",
+      "updown": "하행",
+      "door": "10-4",
+      "facility": "에스컬레이터",
+      "walk_pos": "명동 B4",
+      "fac_pos": "회현 방면 10-4, 충무로 방면 1-1"
+    },
+    {
+      "direction": "충무로",
+      "updown": "상행",
+      "door": "1-1",
+      "facility": "엘리베이터",
+      "walk_pos": "명동 B3",
+      "fac_pos": "당고개 방면 1-1, 오이도 방면 10-4"
+    }
+  ]
+}
+```
+
+---
+
+## 10. 기도 시간 & 키블라
+
+### 10-1. 기도 시간 조회
+
+```
+GET /prayer-times?lat={lat}&lng={lng}&date={YYYY-MM-DD}
+```
+
+> `date` 생략 시 오늘 날짜. 매일 자정 이후 첫 호출 시 갱신 권장.
+
+```json
+// Response 200
+{
+  "date": "2026-05-17",
+  "location": { "city": "Seoul", "latitude": 37.5636, "longitude": 126.9869 },
+  "times": {
+    "Fajr":    "05:12",
+    "Dhuhr":   "12:15",
+    "Asr":     "15:45",
+    "Maghrib": "18:32",
+    "Isha":    "20:05"
+  }
+}
+```
+
+**앱 연동 위치**: `QiblaDataProviders.kt` → `getPrayerTimes()`
+
+```kotlin
+// 교체 전 (하드코딩)
+val schedule = buildTodaySchedule("Fajr" to "05:12", ...)
+
+// 교체 후
+val res = api.getPrayerTimes(lat, lng, today)
+val schedule = buildTodaySchedule(
+    "Fajr"    to res.times.Fajr,
+    "Dhuhr"   to res.times.Dhuhr,
+    "Asr"     to res.times.Asr,
+    "Maghrib" to res.times.Maghrib,
+    "Isha"    to res.times.Isha,
+)
+```
+
+> 응답의 `times` 값은 `PrayerAlarmScheduler`의 AlarmManager 등록에 바로 사용됨.
+
+---
+
+### 10-2. 키블라 방향 조회
+
+```
+GET /qibla?lat={lat}&lng={lng}
+```
+
+```json
+// Response 200
+{
+  "direction_degrees": 292.4,
+  "mecca_distance_km": 8565
+}
+```
+
+**앱 연동 위치**: `QiblaDataProviders.kt`
+
+```kotlin
+// 교체 전
+fun getQiblaDirection(): Float = 292f
+fun getMeccaDistanceKm(): Float = 8565f
+
+// 교체 후 — QiblaDirectionScreen.kt에서 lat/lng 받아 호출
+val res = api.getQibla(lat, lng)
+```
+
+---
+
+## 11. AR 탐색 / 길안내
+
+### 11-1. 주변 POI 조회 (AR 탐색용)
 
 ```
 GET /ar/nearby
@@ -469,7 +606,91 @@ GET /ar/nearby
 }
 ```
 
-### 9.2 AR 길안내 경로 요청
+### 11-2. AR 빌딩 POI 목록
+
+```
+GET /ar/buildings?lat={lat}&lng={lng}&radius={meters}
+```
+
+```json
+// Response 200
+{
+  "buildings": [
+    {
+      "ufid": "noon_square",
+      "name": "눈스퀘어",
+      "category": "쇼핑",
+      "distance_m": 10,
+      "latitude": 37.5630,
+      "longitude": 126.9844,
+      "floors": [
+        {
+          "floor": "B1",
+          "store_count": 15,
+          "categories": ["식당", "쇼핑"],
+          "stores": [
+            { "name": "무궁화식당", "category": "한식", "is_halal": false, "has_detail": true }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+> `ArBuildingPoi`, `ArBuildingFloor`, `ArBuildingStore` 데이터 클래스와 매핑.  
+> `has_detail: true`인 매장은 `GET /ar/stores/{name}` 호출 가능.
+
+---
+
+### 11-3. AR 매장 상세
+
+```
+GET /ar/stores/{name}?building_ufid={ufid}
+```
+
+> `StoreDetail` 데이터 클래스 전체 필드를 그대로 반환.  
+> 코드 위치: `ArPoiFloatingPanel.kt`, `PlaceDetailScreen.kt`
+
+```json
+// Response 200
+{
+  "name": "알리바바 케밥",
+  "name_en": "Ali Baba Kebab",
+  "cuisine_label": "할랄 · 케밥",
+  "distance_m": 15,
+  "is_open": true,
+  "open_hours": "오늘 11:00–22:00",
+  "last_order": "라스트오더 21:30",
+  "address": "서울 중구 명동8길 8-3",
+  "phone": "02-318-4221",
+  "floor": "1F",
+  "website": "alibaba-kebab.com",
+  "description": "...",
+  "is_halal": true,
+  "halal_category": "HALAL_MEAT",
+  "show_trust_badges": true,
+  "latitude": 37.5636,
+  "longitude": 126.9869,
+  "menus": [
+    { "name": "치킨 케밥", "name_en": "Chicken Kebab", "price": "₩12,000" }
+  ],
+  "image_urls": ["https://cdn.scanpang.com/stores/kebab/1.jpg"],
+  "exchange_rates": [],
+  "convenience_services": null,
+  "departments": null,
+  "toilet_male": null,
+  "toilet_female": null,
+  "facility_tags": null,
+  "safety_tags": null,
+  "subway_schedule_up": null,
+  "subway_schedule_down": null
+}
+```
+
+---
+
+### 11-4. AR 길안내 경로 요청
 
 ```
 POST /ar/navigation/route
@@ -483,11 +704,7 @@ POST /ar/navigation/route
 
 // Response 200
 {
-  "destination": {
-    "name": "눈스퀘어",
-    "lat": 37.5636,
-    "lng": 126.9869
-  },
+  "destination": { "name": "눈스퀘어", "lat": 37.5636, "lng": 126.9869 },
   "total_distance_m": 200,
   "estimated_seconds": 180,
   "steps": [
@@ -500,6 +717,36 @@ POST /ar/navigation/route
   ]
 }
 ```
+
+> 코드 위치: `ArNavigationMapScreen.kt`
+
+---
+
+## 12. 화면 ↔ 코드 파일 ↔ API 매핑
+
+| 화면 (Figma) | 코드 파일 | 주요 API |
+|---|---|---|
+| 스플래시 | `SplashScreen.kt` | `GET /users/me` |
+| 로그인 | `LoginScreen.kt` | `POST /auth/login` |
+| 약관 동의 | `TermsAgreementScreen.kt` | — |
+| 온보딩 언어 | `OnboardingLanguageScreen.kt` | `PATCH /users/me` |
+| 온보딩 이름 | `OnboardingNameScreen.kt` | `PATCH /users/me` |
+| 온보딩 선호도 | `OnboardingPreferenceScreen.kt` | `PATCH /users/me` |
+| 홈 | `HomeScreen.kt` | `GET /prayer-times`, `GET /qibla`, `GET /places` |
+| 검색 | `SearchDefaultScreen.kt` | `GET /search` |
+| 주변 할랄 식당 | `NearbyHalalRestaurantsScreen.kt` | `GET /places?category_key=restaurant` |
+| 주변 기도실 | `NearbyPrayerRoomsScreen.kt` | `GET /places?category_key=prayer_room` |
+| 장소 상세 | `PlaceDetailScreen.kt` | `GET /places/{category_key}/{id}` |
+| AR 탐색 | `ArExploreScreen.kt` | `GET /ar/nearby`, `GET /ar/buildings` |
+| AR 내비게이션 | `ArNavigationMapScreen.kt` | `GET /ar/stores/{name}`, `POST /ar/navigation/route` |
+| 키블라 방향 | `QiblaDirectionScreen.kt` | `GET /qibla`, `GET /prayer-times` |
+| 저장된 장소 | `SavedPlacesScreen.kt` | `GET /users/me/saved-places` |
+| 최근 본 장소 | `RecentlyViewedListScreen.kt` | `GET /users/me/recently-viewed` |
+| 내 정보 | `ProfileScreen.kt` | `GET /users/me` |
+| 알림 설정 | `NotificationSettingsScreen.kt` | — (로컬 SharedPrefs) |
+| 언어 설정 | `LanguageSettingsScreen.kt` | `PATCH /users/me` |
+| 부가가치 설정 | `ValueAddedSettingsScreen.kt` | `PATCH /users/me` |
+| 회원탈퇴 | `WithdrawalScreen.kt` | `DELETE /auth/withdraw` |
 
 ---
 

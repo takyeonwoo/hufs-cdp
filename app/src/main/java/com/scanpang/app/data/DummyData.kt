@@ -24,6 +24,10 @@ data class Place(
     val parking: String = "",
     val convenienceServices: String = "",
     val departments: String = "",
+    val toiletMale: String = "",
+    val toiletFemale: String = "",
+    val facilityTags: String = "",
+    val safetyTags: String = "",
 )
 
 data class MenuItem(
@@ -103,6 +107,14 @@ data class StoreDetail(
     val exchangeRates: List<ExchangeRate> = emptyList(),
     val convenienceServices: String? = null,
     val departments: String? = null,
+    val toiletMale: String? = null,
+    val toiletFemale: String? = null,
+    val facilityTags: String? = null,
+    val safetyTags: String? = null,
+    val subwayScheduleUp: String? = null,
+    val subwayScheduleDown: String? = null,
+    val lat: Double = 37.5636,
+    val lng: Double = 126.9869,
 )
 
 data class ArBuildingStore(val name: String, val category: String)
@@ -131,6 +143,28 @@ data class ArFloorSectionUi(
     val storeCount: Int,
     val categories: List<String>,
     val stores: List<ArFloorStoreLine>,
+)
+
+data class SubwayExit(val exitNo: String, val facilities: List<String>)
+
+data class SubwayScheduleDir(val first: String, val last: String, val toward: String)
+
+data class SubwayFastAlight(
+    val direction: String,
+    val updown: String,
+    val door: String,
+    val fac: String,
+    val walkPos: String,
+    val facPos: String = "",
+)
+
+data class SubwayDetail(
+    val line: String = "",
+    val exitCount: Int = 0,
+    val exits: List<SubwayExit> = emptyList(),
+    val scheduleUp: SubwayScheduleDir? = null,
+    val scheduleDown: SubwayScheduleDir? = null,
+    val fastAlights: List<SubwayFastAlight> = emptyList(),
 )
 
 object DummyData {
@@ -525,6 +559,10 @@ object DummyData {
             description = "명동 중심가 공중화장실입니다.",
             tags = listOf("남녀분리", "장애인화장실", "기저귀교환대"),
             images = placeholderImage,
+            toiletMale = "5",
+            toiletFemale = "11",
+            facilityTags = "장애인 화장실, 유아 화장실, 기저귀 교환대",
+            safetyTags = "CCTV, 비상벨",
         ),
     )
 
@@ -810,12 +848,19 @@ object DummyData {
             cuisineLabel = "지하철역", distance = "15m",
             address = "서울 중구 명동8길 11-6", phone = "010-3142-0278",
             description = "명동역(424)은 서울특별시 중구에 위치한 서울교통공사 4호선 역으로, 명동 거리와 바로 연결되는 주요 교통 거점입니다.",
+            subwayScheduleUp = "첫차 00:01  막차 20:57  ·  불암산(당고개) 방면",
+            subwayScheduleDown = "첫차 00:00  막차 20:50  ·  오이도 방면",
         ),
         "서울중앙우체국 공중화장실" to StoreDetail(
             name = "서울중앙우체국 공중화장실",
             cuisineLabel = "화장실", distance = "15m",
             address = "서울 중구 명동8길 11-6", floor = "1F",
             description = "서울중앙우체국(포스트타워)은 명동 중심가에 위치하여 무료로 이용 가능한 공중화장실을 운영합니다.",
+            imageCount = 0,
+            toiletMale = "5",
+            toiletFemale = "11",
+            facilityTags = "장애인 화장실, 유아 화장실, 기저귀 교환대",
+            safetyTags = "CCTV, 비상벨",
         ),
         "시청역1호선 물품보관함" to StoreDetail(
             name = "시청역1호선 B1 물품보관함",
@@ -921,6 +966,41 @@ object DummyData {
             address = "서울 중구 명동8길 11-6", phone = "010-3142-0278", floor = "8F",
             website = "youscan.com",
             description = "CGV 명동(눈스퀘어)은 서울 중구 명동길 14 눈스퀘어 8층에 위치한 복합 상영관으로, 최신 영화와 4DX 상영 서비스를 제공합니다.",
+        ),
+    )
+
+    val subwayDetails: Map<String, SubwayDetail> = mapOf(
+        "sub1" to SubwayDetail(
+            line = "4호선",
+            exitCount = 10,
+            exits = listOf(
+                SubwayExit("1", listOf("남산돈가스거리", "대한적십자사(서울사무소)", "리라초등학교")),
+                SubwayExit("2", listOf("명동성당", "중구청")),
+                SubwayExit("3", listOf("명동예술극장", "NH농협은행")),
+                SubwayExit("4", listOf("명동8길", "을지로입구역 방향")),
+                SubwayExit("5", listOf("CGV(명동)", "롯데백화점", "신세계백화점", "한국은행")),
+                SubwayExit("6", listOf("명동 거리", "눈스퀘어")),
+                SubwayExit("7", listOf("남대문시장", "회현역 방향")),
+                SubwayExit("8", listOf("남산 케이블카", "남산공원")),
+                SubwayExit("9", listOf("퇴계로", "충무로역 방향")),
+                SubwayExit("10", listOf("소공로", "조선호텔")),
+            ),
+            scheduleUp = SubwayScheduleDir("00:01", "20:57", "불암산(당고개)"),
+            scheduleDown = SubwayScheduleDir("00:00", "20:50", "오이도"),
+            fastAlights = listOf(
+                SubwayFastAlight(
+                    direction = "회현", updown = "하행",
+                    door = "10-4", fac = "에스컬레이터",
+                    walkPos = "명동 B4",
+                    facPos = "회현 방면 10-4, 충무로 방면 1-1",
+                ),
+                SubwayFastAlight(
+                    direction = "충무로", updown = "상행",
+                    door = "1-1", fac = "엘리베이터",
+                    walkPos = "명동 B3",
+                    facPos = "당고개 방면 1-1, 오이도 방면 10-4",
+                ),
+            ),
         ),
     )
 

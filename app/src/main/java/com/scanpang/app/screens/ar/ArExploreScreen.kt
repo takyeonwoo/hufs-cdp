@@ -259,17 +259,29 @@ fun ArExploreScreen(
         }
     }
     val arExploreDemoHits = remember(isHalalUser, userLocation) {
-        DummyData.arExploreDemoHits.map { hit ->
+        val buildings = DummyData.arBuildingPois.map { poi ->
             val dist = userLocation?.let { loc ->
-                distanceText(loc.latitude, loc.longitude, hit.lat, hit.lng)
-            } ?: hit.distance
+                distanceText(loc.latitude, loc.longitude, poi.lat, poi.lng)
+            } ?: poi.distance
             ArExploreSearchHitUi(
-                hit.name,
-                hit.category,
-                dist,
-                if (isHalalUser && hit.isHalal) "할랄 인증" else null,
+                title = poi.name,
+                category = poi.category,
+                distance = dist,
+                badgeLabel = null,
             )
         }
+        val stores = DummyData.arStoreDetails.values.map { detail ->
+            val dist = userLocation?.let { loc ->
+                distanceText(loc.latitude, loc.longitude, detail.lat, detail.lng)
+            } ?: detail.distance
+            ArExploreSearchHitUi(
+                title = detail.name,
+                category = detail.cuisineLabel,
+                distance = dist,
+                badgeLabel = if (isHalalUser && detail.isHalal) "할랄 인증" else null,
+            )
+        }
+        buildings + stores
     }
     val arRecentQueries = remember(arSearchHistoryTick, isSearchOpen) {
         if (isSearchOpen) searchHistoryPrefs.getRecent() else emptyList()
@@ -306,7 +318,7 @@ fun ArExploreScreen(
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
             ArCameraBackdrop(
-                showFreezeTint = isFrozen,
+                isFrozen = isFrozen,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -552,8 +564,14 @@ fun ArExploreScreen(
                         showResultList = showArSearchResults,
                         searchHits = displayedArHits,
                         onHitViewInfo = { hit ->
-                            selectedPoi = hit.title
-                            activeDetailTab = ArPoiTabBuilding
+                            val isBuilding = DummyData.arBuildingPois.any { it.name == hit.title }
+                            if (isBuilding) {
+                                selectedPoi = hit.title
+                                activeDetailTab = ArPoiTabBuilding
+                            } else {
+                                selectedStore = hit.title
+                                selectedPoi = null
+                            }
                             isSearchOpen = false
                             showArSearchResults = false
                         },

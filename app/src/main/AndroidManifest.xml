@@ -10,6 +10,11 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- 기도 시간 알림 관련 권한 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -17,14 +22,34 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScanPang">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.ScanPang">
+            android:theme="@style/Theme.ScanPang.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 기도 시간 알람 수신기 -->
+        <receiver
+            android:name=".notification.PrayerAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.scanpang.app.PRAYER_ALARM" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 기기 재부팅 후 알람 재등록 -->
+        <receiver
+            android:name=".notification.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>
